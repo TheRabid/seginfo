@@ -17,7 +17,7 @@ import javax.crypto.SecretKey;
 public class Main {
 
 	final private static int[] KEY_LENGTHS = { 56, 512 };
-	final private static String[] ALGORITMOS = { "SHA-256", "DES", "DSA" };
+	final private static String[] ALGORITMOS = { "SHA-256", "DES", "RSA","SHA256withRSA" };
 	final private static String MENSAJE = "VIVA PIT";
 
 	public static void main(String[] args) {
@@ -54,7 +54,7 @@ public class Main {
 		System.out.println("Comienzo de creación de firma digital");
 		System.out.println("Firmando...");
 		startTime = System.nanoTime();
-		Signature firma = SecurityUtils.createDigitalSignature(MENSAJE, keyPair, ALGORITMOS[2]);
+		Signature firma = SecurityUtils.createDigitalSignature(MENSAJE, keyPair, ALGORITMOS[0], ALGORITMOS[3]);
 		endTime = System.nanoTime();
 		duration = (endTime - startTime) / (long) (1000000.0);
 		System.out

@@ -62,14 +62,14 @@ public class SecurityUtils {
 		return p;
 	}
 	
-	public static Signature createDigitalSignature(String message, KeyPair pair, String alg) {
+	public static Signature createDigitalSignature(String message, KeyPair pair, String alg1, String alg2) {
 		
 		/* Hash del mensaje */
-		String msg = hashMsg(message, alg);
+		String msg = hashMsg(message, alg1);
 		Signature dsa = null;
 		/* Firma con mi clave publica */
 		try {
-			dsa = Signature.getInstance(alg);
+			dsa = Signature.getInstance(alg2);
 			/* Initializing the object with a private key */
 			PrivateKey priv = pair.getPrivate();
 			dsa.initSign(priv);
