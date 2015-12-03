@@ -4,13 +4,21 @@ import java.security.KeyPair;
 
 import javax.crypto.SecretKey;
 
+/**
+ * 
+ * @author Alejandro Royo Amondarain (NIP: 560285)
+ * 			Jaime Ruiz-Borau Vizárraga (NIP: 546751)
+ *
+ *	Esta clase contiene el codigo correspondiente a las pruebas y medida de
+ *	tiempos de los diferentes metodos de hash, encriptacion y firma digital
+ *	solicitados en el guion de la practica 5 de Seguridad Informatica.
+ */
 public class Main {
 
 	final private static int[] KEY_LENGTHS = { 56, 512 };
 	final private static String[] ALGORITMOS = { "SHA-256", "DES", "DSA" };
 	final private static String MENSAJE = "VIVA PIT";
 
-	@SuppressWarnings("unused")
 	public static void main(String[] args) {
 
 		/* Hash del mensaje */
