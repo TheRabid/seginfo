@@ -10,10 +10,10 @@ import javax.crypto.SecretKey;
 
 public class SecurityUtils {
 
-	public static String hashMsg(String msg){
+	public static String hashMsg(String msg, String algoritmo){
 		MessageDigest md = null;
 		try {
-			md = MessageDigest.getInstance("SHA-256");
+			md = MessageDigest.getInstance(algoritmo);
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
 		}
@@ -30,10 +30,10 @@ public class SecurityUtils {
 		return sb.toString();
 	}
 	
-	public static SecretKey generateSecretKey(int keyLength){
+	public static SecretKey generateSecretKey(int keyLength, String algoritmo){
 		SecretKey s = null;
 		try {
-			KeyGenerator g = KeyGenerator.getInstance("RSA");
+			KeyGenerator g = KeyGenerator.getInstance(algoritmo);
 			s = g.generateKey();
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
@@ -41,10 +41,10 @@ public class SecurityUtils {
 		return s;
 	}
 	
-	public static KeyPair generatePrivatePublicKey(int keyLength){
+	public static KeyPair generatePrivatePublicKey(int keyLength, String algoritmo){
 		KeyPair p = null;
 		try {
-			KeyPairGenerator g = KeyPairGenerator.getInstance("RSA");
+			KeyPairGenerator g = KeyPairGenerator.getInstance(algoritmo);
 			g.initialize(keyLength);
 			p = g.generateKeyPair();
 		} catch (NoSuchAlgorithmException e) {
