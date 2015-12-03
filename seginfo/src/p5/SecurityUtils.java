@@ -56,4 +56,17 @@ public class SecurityUtils {
 		}
 		return p;
 	}
+	
+	public static void createDigitalSignature(String msg, KeyPair pair) {
+		
+		/* Hash del mensaje */
+		
+		
+		/* Firma con mi clave publica */
+		
+		
+		/* Envia el mensaje */
+		
+		
+	}
 }
