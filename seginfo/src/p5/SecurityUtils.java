@@ -1,9 +1,14 @@
 package p5;
 
+import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
@@ -57,16 +62,42 @@ public class SecurityUtils {
 		return p;
 	}
 	
-	public static void createDigitalSignature(String msg, KeyPair pair) {
+	public static Signature createDigitalSignature(String message, KeyPair pair, String alg) {
 		
 		/* Hash del mensaje */
-		
-		
+		String msg = hashMsg(message, alg);
+		Signature dsa = null;
 		/* Firma con mi clave publica */
+		try {
+			dsa = Signature.getInstance(alg);
+			/* Initializing the object with a private key */
+			PrivateKey priv = pair.getPrivate();
+			dsa.initSign(priv);
+
+			/* Update and sign the data */
+			dsa.update(msg.getBytes());
+			byte[] sig = dsa.sign();
+			
+			/* Initializing the object with the public key */
+			PublicKey pub = pair.getPublic();
+			dsa.initVerify(pub);
+
+			/* Update and verify the data */
+			dsa.update(msg.getBytes());
+			boolean verifies = dsa.verify(sig);
+			System.out.println("signature verifies: " + verifies);
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+			System.exit(0);
+		} catch (SignatureException e) {
+			e.printStackTrace();
+			System.exit(0);
+		} catch (InvalidKeyException e) {
+			e.printStackTrace();
+			System.exit(0);
+		}
 		
-		
-		/* Envia el mensaje */
-		
-		
+		/* Devuelve la firma */
+		return dsa;
 	}
 }
