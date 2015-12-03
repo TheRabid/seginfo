@@ -42,6 +42,14 @@ public class Main {
 				.println("Tiempo de ejecución de generación de clave publica y privada: " + duration + " milisegundos");
 
 		/* Firma digital */
-
+		System.out.println("Comienzo de creación de firma digital");
+		System.out.println("Firmando...");
+		startTime = System.nanoTime();
+		SecurityUtils.createDigitalSignature(KEY_LENGTHS[1], ALGORITMOS[2]);
+		endTime = System.nanoTime();
+		duration = (endTime - startTime) / (long) (1000000.0);
+		System.out
+				.println("Tiempo de ejecución de creación de firma digital: " + duration + " milisegundos");
+		
 	}
 }
