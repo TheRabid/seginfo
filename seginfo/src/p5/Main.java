@@ -1,6 +1,7 @@
 package p5;
 
 import java.security.KeyPair;
+import java.security.Signature;
 
 import javax.crypto.SecretKey;
 
@@ -53,7 +54,7 @@ public class Main {
 		System.out.println("Comienzo de creación de firma digital");
 		System.out.println("Firmando...");
 		startTime = System.nanoTime();
-		SecurityUtils.createDigitalSignature(KEY_LENGTHS[1], ALGORITMOS[2]);
+		Signature firma = SecurityUtils.createDigitalSignature(MENSAJE, keyPair, ALGORITMOS[2]);
 		endTime = System.nanoTime();
 		duration = (endTime - startTime) / (long) (1000000.0);
 		System.out
