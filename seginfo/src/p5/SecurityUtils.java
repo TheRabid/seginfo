@@ -16,6 +16,7 @@ public class SecurityUtils {
 			md = MessageDigest.getInstance(algoritmo);
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
+			System.exit(0);
 		}
 		md.update(msg.getBytes());
 
@@ -34,9 +35,11 @@ public class SecurityUtils {
 		SecretKey s = null;
 		try {
 			KeyGenerator g = KeyGenerator.getInstance(algoritmo);
+			g.init(keyLength);
 			s = g.generateKey();
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
+			System.exit(0);
 		}
 		return s;
 	}
@@ -49,6 +52,7 @@ public class SecurityUtils {
 			p = g.generateKeyPair();
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
+			System.exit(0);
 		}
 		return p;
 	}
