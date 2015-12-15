@@ -11,6 +11,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.cert.Certificate;
@@ -70,7 +71,7 @@ public class Main {
 		double durationPrivPubKey = privatePublicKeyTest(KEY_LENGTHS[1], ALGORITMOS[2], ALGORITMOS[3], ks);
 
 		// Cifrar mensaje de prueba
-		encryptTextTest(keyPair.getPrivate(), MENSAJE);
+		encryptTextTest(keyPair.getPublic(),keyPair.getPrivate(), MENSAJE);
 
 		/* Firma digital */
 		double durationDigitalSignature = digitalSignatureTest(keyPair);
@@ -191,16 +192,20 @@ public class Main {
 	 * @throws IllegalBlockSizeException 
 	 * @throws UnsupportedEncodingException 
 	 */
-	private static double encryptTextTest(PrivateKey key, String msg) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, UnsupportedEncodingException {
+	private static double encryptTextTest(PublicKey puKey, PrivateKey prKey, String msg) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, UnsupportedEncodingException {
 		System.out.println("=-=-=-=Encriptar texto=-=-=-=");
 		System.out.println("Comienzo de creacion de firma digital");
 		System.out.println("Firmando...");
 		long startTime = System.nanoTime();
-	    Cipher cipher = Cipher.getInstance("DES/ECB/PKCS5Padding");
-	    cipher.init(Cipher.ENCRYPT_MODE, key);
+	    Cipher cipher = Cipher.getInstance("RSA");
+	    cipher.init(Cipher.ENCRYPT_MODE, puKey);
 	    byte[] cipherText = cipher.doFinal(msg.getBytes());
 		long endTime = System.nanoTime();
 	    System.out.println("Finalizado el encriptado:\t"+(new String(cipherText, "UTF8")));
+	    System.out.println( "Desencriptando para certificar" );
+	    cipher.init(Cipher.DECRYPT_MODE, prKey);
+	    byte[] newPlainText = cipher.doFinal(cipherText);
+	    System.out.println( "Desencriptado: "+(new String(newPlainText, "UTF8")));
 		long duration = (endTime - startTime) / (long) (1000000.0);
 		System.out.println("Tiempo de ejecución de cifrado de texto: " + duration + " milisegundos");
 		System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
