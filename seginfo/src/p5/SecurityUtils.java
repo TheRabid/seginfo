@@ -62,7 +62,7 @@ public class SecurityUtils {
 		return p;
 	}
 	
-	public static Signature createDigitalSignature(String message, KeyPair pair, String alg1, String alg2) {
+	public static Signature createDigitalSignature(String message, PublicKey pub, PrivateKey priv, String alg1, String alg2) {
 		
 		/* Hash del mensaje */
 		String msg = hashMsg(message, alg1);
@@ -71,7 +71,6 @@ public class SecurityUtils {
 		try {
 			dsa = Signature.getInstance(alg2);
 			/* Initializing the object with a private key */
-			PrivateKey priv = pair.getPrivate();
 			dsa.initSign(priv);
 
 			/* Update and sign the data */
@@ -79,7 +78,6 @@ public class SecurityUtils {
 			byte[] sig = dsa.sign();
 			
 			/* Initializing the object with the public key */
-			PublicKey pub = pair.getPublic();
 			dsa.initVerify(pub);
 
 			/* Update and verify the data */

@@ -7,6 +7,7 @@ import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyStore;
+import java.security.KeyStore.Entry;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -14,6 +15,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
+import java.security.UnrecoverableEntryException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
@@ -50,11 +52,12 @@ public class Main {
 	final private static String[] ALGORITMOS = { "SHA-256", "DES", "RSA", "SHA256withRSA" };
 	final private static String MENSAJE = "VIVA PIT";
 	final private static String PASSWORD = "VIVAPODEMOS";
-	private static KeyPair keyPair = null;
+	private static PublicKey pub = null;
 
 	@SuppressWarnings("unused")
 	public static void main(String[] args) throws KeyStoreException, InvalidKeyException, IllegalStateException,
-			NoSuchProviderException, NoSuchAlgorithmException, SignatureException, CertificateException, IOException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException {
+			NoSuchProviderException, NoSuchAlgorithmException, SignatureException, CertificateException, IOException,
+			NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, UnrecoverableEntryException {
 
 		/* Hash */
 		double durationHash = hashTest(MENSAJE, ALGORITMOS[0]);
@@ -63,18 +66,25 @@ public class Main {
 		KeyStore ks = null;
 		ks = KeyStore.getInstance("JCEKS");
 		ks.load(null, PASSWORD.toCharArray());
+		KeyStore.ProtectionParameter protParam = new KeyStore.PasswordProtection(PASSWORD.toCharArray());
 
 		/* Generar clave secreta */
 		double durationSecretKey = secretKeyTest(KEY_LENGTHS[0], ALGORITMOS[1], ks);
-
+		KeyStore.SecretKeyEntry secrEntry = (KeyStore.SecretKeyEntry) ks.getEntry("secretkey", protParam);
+		
+		/* Test encriptado clave secreta */
+		System.out.println("=====TEST ENCRIPTADO CLAVE SECRETA=====");
+		encryptTextTest(secrEntry.getSecretKey(),secrEntry.getSecretKey(), MENSAJE, ALGORITMOS[1]);
+		
 		/* Criptografia de clave publica/privada */
 		double durationPrivPubKey = privatePublicKeyTest(KEY_LENGTHS[1], ALGORITMOS[2], ALGORITMOS[3], ks);
+		PrivateKey pri = (PrivateKey) ks.getKey("privatekey", PASSWORD.toCharArray());
 
 		// Cifrar mensaje de prueba
-		encryptTextTest(keyPair.getPublic(),keyPair.getPrivate(), MENSAJE);
+		encryptTextTest(pub, pri, MENSAJE, ALGORITMOS[2]);
 
 		/* Firma digital */
-		double durationDigitalSignature = digitalSignatureTest(keyPair);
+		double durationDigitalSignature = digitalSignatureTest(pub, pri);
 
 	}
 
@@ -150,7 +160,7 @@ public class Main {
 		System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
 		// Almacenar clave secreta
 		KeyStore.SecretKeyEntry skEntry = new KeyStore.SecretKeyEntry(secretKey);
-		ks.setEntry("claveSecreta", skEntry, new KeyStore.PasswordProtection(PASSWORD.toCharArray()));
+		ks.setEntry("secretkey", skEntry, new KeyStore.PasswordProtection(PASSWORD.toCharArray()));
 		return duration;
 	}
 
@@ -167,7 +177,7 @@ public class Main {
 		System.out.println("Comienzo de generación de clave privada y clave pública");
 		System.out.println("Generando...");
 		long startTime = System.nanoTime();
-		keyPair = SecurityUtils.generatePrivatePublicKey(keyLength, alg);
+		KeyPair keyPair = SecurityUtils.generatePrivatePublicKey(keyLength, alg);
 		long endTime = System.nanoTime();
 		long duration = (endTime - startTime) / (long) (1000000.0);
 		System.out
@@ -177,7 +187,11 @@ public class Main {
 		X509Certificate certificate = generateCertificate(keyPair, algCert);
 		Certificate[] certChain = new Certificate[1];
 		certChain[0] = certificate;
-		ks.setKeyEntry("privatekey", (Key) keyPair.getPrivate(), PASSWORD.toCharArray(), certChain);
+		pub = keyPair.getPublic();
+		System.out.println(keyPair.toString());
+		System.out.println(keyPair.getPrivate().toString());
+		System.out.println(certChain.toString());
+		ks.setKeyEntry("privatekey", (Key)keyPair.getPrivate(), PASSWORD.toCharArray(), certChain);  
 		return duration;
 	}
 
@@ -185,44 +199,46 @@ public class Main {
 	 * Para la encriptacion del texto... TODO
 	 * 
 	 * @return el tiempo que ha costado encriptar el texto
-	 * @throws NoSuchPaddingException 
-	 * @throws NoSuchAlgorithmException 
-	 * @throws InvalidKeyException 
-	 * @throws BadPaddingException 
-	 * @throws IllegalBlockSizeException 
-	 * @throws UnsupportedEncodingException 
+	 * @throws NoSuchPaddingException
+	 * @throws NoSuchAlgorithmException
+	 * @throws InvalidKeyException
+	 * @throws BadPaddingException
+	 * @throws IllegalBlockSizeException
+	 * @throws UnsupportedEncodingException
 	 */
-	private static double encryptTextTest(PublicKey puKey, PrivateKey prKey, String msg) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, UnsupportedEncodingException {
+	private static double encryptTextTest(Key puKey, Key prKey, String msg, String alg)
+			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException,
+			BadPaddingException, UnsupportedEncodingException {
 		System.out.println("=-=-=-=Encriptar texto=-=-=-=");
-		System.out.println("Comienzo de creacion de firma digital");
-		System.out.println("Firmando...");
+		System.out.println("Comienzo de encriptado");
+		System.out.println("Encriptando...");
 		long startTime = System.nanoTime();
-	    Cipher cipher = Cipher.getInstance("RSA");
-	    cipher.init(Cipher.ENCRYPT_MODE, puKey);
-	    byte[] cipherText = cipher.doFinal(msg.getBytes());
+		Cipher cipher = Cipher.getInstance(alg);
+		cipher.init(Cipher.ENCRYPT_MODE, puKey);
+		byte[] cipherText = cipher.doFinal(msg.getBytes());
 		long endTime = System.nanoTime();
-	    System.out.println("Finalizado el encriptado:\t"+(new String(cipherText, "UTF8")));
-	    System.out.println( "Desencriptando para certificar" );
-	    cipher.init(Cipher.DECRYPT_MODE, prKey);
-	    byte[] newPlainText = cipher.doFinal(cipherText);
-	    System.out.println( "Desencriptado: "+(new String(newPlainText, "UTF8")));
+		System.out.println("Finalizado el encriptado:\t" + (new String(cipherText, "UTF8")));
+		System.out.println("Desencriptando para certificar");
+		cipher.init(Cipher.DECRYPT_MODE, prKey);
+		byte[] newPlainText = cipher.doFinal(cipherText);
+		System.out.println("Desencriptado: " + (new String(newPlainText, "UTF8")));
 		long duration = (endTime - startTime) / (long) (1000000.0);
 		System.out.println("Tiempo de ejecución de cifrado de texto: " + duration + " milisegundos");
 		System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
 		return duration;
 	}
-	
+
 	/**
 	 * Para la generación de la firma digital... TODO
 	 * 
 	 * @return el tiempo que ha costado generar la firma digital
 	 */
-	private static double digitalSignatureTest(KeyPair keyPair) {
+	private static double digitalSignatureTest(PublicKey pub, PrivateKey priv) {
 		System.out.println("=-=-=-=Firma digital=-=-=-=");
 		System.out.println("Comienzo de creacion de firma digital");
 		System.out.println("Firmando...");
 		long startTime = System.nanoTime();
-		Signature firma = SecurityUtils.createDigitalSignature(MENSAJE, keyPair, ALGORITMOS[0], ALGORITMOS[3]);
+		Signature firma = SecurityUtils.createDigitalSignature(MENSAJE, pub, priv, ALGORITMOS[0], ALGORITMOS[3]);
 		long endTime = System.nanoTime();
 		long duration = (endTime - startTime) / (long) (1000000.0);
 		System.out.println("Tiempo de ejecución de creacion de firma digital: " + duration + " milisegundos");
