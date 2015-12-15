@@ -188,9 +188,6 @@ public class Main {
 		Certificate[] certChain = new Certificate[1];
 		certChain[0] = certificate;
 		pub = keyPair.getPublic();
-		System.out.println(keyPair.toString());
-		System.out.println(keyPair.getPrivate().toString());
-		System.out.println(certChain.toString());
 		ks.setKeyEntry("privatekey", (Key)keyPair.getPrivate(), PASSWORD.toCharArray(), certChain);  
 		return duration;
 	}
