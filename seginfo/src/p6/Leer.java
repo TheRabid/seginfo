@@ -2,6 +2,8 @@ package p6;
 
 import java.util.Scanner;
 
+import javax.xml.bind.Validator;
+
 import org.owasp.esapi.ESAPI;
 
 public class Leer {
@@ -39,7 +41,8 @@ public class Leer {
 		}
 		
 		if(true){
-			System.out.println(ESAPI.encoder().canonicalize("hola"));;
+			System.out.println(ESAPI.encoder().canonicalize("hola"));
+			
 		}
 		
 		// Funcionamiento principal del programa

@@ -3,11 +3,11 @@ package p5;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyStore;
-import java.security.KeyStore.Entry;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -23,6 +23,7 @@ import java.security.cert.X509Certificate;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import org.bouncycastle.jce.X509Principal;
+import org.bouncycastle.util.encoders.Base64;
 import org.bouncycastle.x509.X509V3CertificateGenerator;
 
 import javax.crypto.BadPaddingException;
@@ -30,6 +31,7 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
 
 /**
  * 
@@ -41,23 +43,22 @@ import javax.crypto.SecretKey;
  *         digital solicitados en el guion de la practica 5 de Seguridad
  *         Informatica.
  */
-/**
- * @author Jaime
- *
- */
+
 @SuppressWarnings("deprecation")
 public class Main {
 
-	final private static int[] KEY_LENGTHS = { 56, 512 };
-	final private static String[] ALGORITMOS = { "SHA-256", "DES", "RSA", "SHA256withRSA" };
-	final private static String MENSAJE = "VIVA PIT";
+	final private static int[] KEY_LENGTHS = { 128, 1024 };
+	final private static String[] ALGORITMOS = { "SHA-256", "AES", "RSA", "SHA256withRSA" };
+	final private static String[] BLOCKSPADDING = { "/PCBC/PKCS5Padding", "/ECB/PKCS1Padding" };
+	final private static String MENSAJE = "VIVA PITAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 	final private static String PASSWORD = "VIVAPODEMOS";
 	private static PublicKey pub = null;
 
 	@SuppressWarnings("unused")
 	public static void main(String[] args) throws KeyStoreException, InvalidKeyException, IllegalStateException,
 			NoSuchProviderException, NoSuchAlgorithmException, SignatureException, CertificateException, IOException,
-			NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, UnrecoverableEntryException {
+			NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, UnrecoverableEntryException,
+			InvalidAlgorithmParameterException {
 
 		/* Hash */
 		double durationHash = hashTest(MENSAJE, ALGORITMOS[0]);
@@ -71,17 +72,17 @@ public class Main {
 		/* Generar clave secreta */
 		double durationSecretKey = secretKeyTest(KEY_LENGTHS[0], ALGORITMOS[1], ks);
 		KeyStore.SecretKeyEntry secrEntry = (KeyStore.SecretKeyEntry) ks.getEntry("secretkey", protParam);
-		
+
 		/* Test encriptado clave secreta */
 		System.out.println("=====TEST ENCRIPTADO CLAVE SECRETA=====");
-		encryptTextTest(secrEntry.getSecretKey(),secrEntry.getSecretKey(), MENSAJE, ALGORITMOS[1]);
-		
+		encryptTextTest(secrEntry.getSecretKey(), secrEntry.getSecretKey(), MENSAJE, ALGORITMOS[1], BLOCKSPADDING[0]);
+
 		/* Criptografia de clave publica/privada */
 		double durationPrivPubKey = privatePublicKeyTest(KEY_LENGTHS[1], ALGORITMOS[2], ALGORITMOS[3], ks);
 		PrivateKey pri = (PrivateKey) ks.getKey("privatekey", PASSWORD.toCharArray());
 
 		// Cifrar mensaje de prueba
-		encryptTextTest(pub, pri, MENSAJE, ALGORITMOS[2]);
+		encryptTextTest(pub, pri, MENSAJE, ALGORITMOS[2], BLOCKSPADDING[1]);
 
 		/* Firma digital */
 		double durationDigitalSignature = digitalSignatureTest(pub, pri);
@@ -118,10 +119,6 @@ public class Main {
 	 * Como habitualmente se emplean los algoritmos MD5 y SHA-1, que son de 128
 	 * y 160 bits respectivamente, esta implementación proporciona una mayor
 	 * seguridad.
-	 * 
-	 * @return el tiempo que ha costado hashear el mensaje
-	 * @throws NoSuchAlgorithmException
-	 *             Si el algoritmo no existe
 	 */
 	private static double hashTest(String msg, String alg) throws NoSuchAlgorithmException {
 		/* Hash del mensaje */
@@ -143,9 +140,6 @@ public class Main {
 	/**
 	 * Para la generación de una clave secreta... TODO
 	 * 
-	 * @return el tiempo que ha costado generar la clave secreta
-	 * @throws KeyStoreException
-	 *             si no se puede almacenar la clave
 	 */
 	private static double secretKeyTest(int keyLength, String alg, KeyStore ks) throws KeyStoreException {
 		/* Criptografia de clave secreta */
@@ -178,6 +172,7 @@ public class Main {
 		System.out.println("Generando...");
 		long startTime = System.nanoTime();
 		KeyPair keyPair = SecurityUtils.generatePrivatePublicKey(keyLength, alg);
+
 		long endTime = System.nanoTime();
 		long duration = (endTime - startTime) / (long) (1000000.0);
 		System.out
@@ -188,7 +183,7 @@ public class Main {
 		Certificate[] certChain = new Certificate[1];
 		certChain[0] = certificate;
 		pub = keyPair.getPublic();
-		ks.setKeyEntry("privatekey", (Key)keyPair.getPrivate(), PASSWORD.toCharArray(), certChain);  
+		ks.setKeyEntry("privatekey", (Key) keyPair.getPrivate(), PASSWORD.toCharArray(), certChain);
 		return duration;
 	}
 
@@ -202,28 +197,106 @@ public class Main {
 	 * @throws BadPaddingException
 	 * @throws IllegalBlockSizeException
 	 * @throws UnsupportedEncodingException
+	 * @throws InvalidAlgorithmParameterException
 	 */
-	private static double encryptTextTest(Key puKey, Key prKey, String msg, String alg)
+	private static double encryptTextTest(Key puKey, Key prKey, String msg, String alg, String pad)
 			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException,
-			BadPaddingException, UnsupportedEncodingException {
+			BadPaddingException, UnsupportedEncodingException, InvalidAlgorithmParameterException {
 		System.out.println("=-=-=-=Encriptar texto=-=-=-=");
 		System.out.println("Comienzo de encriptado");
 		System.out.println("Encriptando...");
+		String initVector = "RandomInitVector"; // 16 bytes IV
+		IvParameterSpec iv = new IvParameterSpec(initVector.getBytes("UTF-8"));
+		Cipher cipher = Cipher.getInstance(alg + pad);
+		if (puKey instanceof PublicKey) {
+			cipher.init(Cipher.ENCRYPT_MODE, puKey);
+		} else {
+			cipher.init(Cipher.ENCRYPT_MODE, puKey, iv);
+		}
+		String finalEncrypt = "";
 		long startTime = System.nanoTime();
-		Cipher cipher = Cipher.getInstance(alg);
-		cipher.init(Cipher.ENCRYPT_MODE, puKey);
+		// for (int i = 0; i < msg.length(); i += 16) {
+		// byte[] cipherText = null;
+		// if (i + 16 >= msg.length()) {
+		// if (msg.length() % 16 != 0) {
+		// System.out.println(msg.length() % 128);
+		// for (int p = 0; p < msg.length() % 128; p++) {
+		// msg = msg + " ";
+		// }
+		// }
+		// cipherText = cipher.doFinal(msg.substring(i,
+		// msg.length()).getBytes());
+		// } else {
+		// cipherText = cipher.doFinal(msg.substring(i, i + 128).getBytes());
+		// }
+		// finalEncrypt = finalEncrypt + new String(cipherText, "UTF8");
+		// }
 		byte[] cipherText = cipher.doFinal(msg.getBytes());
 		long endTime = System.nanoTime();
-		System.out.println("Finalizado el encriptado:\t" + (new String(cipherText, "UTF8")));
+		finalEncrypt = new String(cipherText, "UTF8");
+		System.out.println("Finalizado el encriptado:\t" + finalEncrypt);
 		System.out.println("Desencriptando para certificar");
-		cipher.init(Cipher.DECRYPT_MODE, prKey);
-		byte[] newPlainText = cipher.doFinal(cipherText);
-		System.out.println("Desencriptado: " + (new String(newPlainText, "UTF8")));
+		Cipher cipher2 = Cipher.getInstance(alg + pad);
+		if (puKey instanceof PublicKey) {
+			cipher2.init(Cipher.DECRYPT_MODE, prKey);
+		} else {
+			cipher2.init(Cipher.DECRYPT_MODE, prKey, iv);
+		}
+		String finalDeEncrypt = "";
+		// for (int i = 0; i < finalEncrypt.length(); i += 128) {
+		// byte[] newPlainText = null;
+		// if(i+128>=msg.length()){
+		// newPlainText =
+		// cipher.doFinal(finalEncrypt.substring(i,finalEncrypt.length()).getBytes());
+		// }
+		// else{
+		// newPlainText =
+		// cipher.doFinal(finalEncrypt.substring(i,i+128).getBytes());
+		// }
+		// finalDeEncrypt = finalDeEncrypt + new String(newPlainText, "UTF8");
+		// }
+		finalDeEncrypt = new String(cipher2.doFinal(cipherText), "UTF8");
+		System.out.println("Desencriptado: " + finalDeEncrypt);
 		long duration = (endTime - startTime) / (long) (1000000.0);
 		System.out.println("Tiempo de ejecución de cifrado de texto: " + duration + " milisegundos");
 		System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
 		return duration;
 	}
+
+	public static String encrypt(Key key, String value) {
+		try {
+			Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
+			cipher.init(Cipher.ENCRYPT_MODE, key);
+
+			byte[] encrypted = cipher.doFinal(value.getBytes());
+			System.out.println("encrypted string: " + Base64.toBase64String(encrypted));
+
+			return Base64.toBase64String(encrypted);
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+
+		return null;
+	}
+
+	// public static String decrypt(Key key, String initVector, String
+	// encrypted) {
+	// try {
+	// IvParameterSpec iv = new IvParameterSpec(initVector.getBytes("UTF-8"));
+	// SecretKeySpec skeySpec = new SecretKeySpec(key.getBytes("UTF-8"), "AES");
+	//
+	// Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
+	// cipher.init(Cipher.DECRYPT_MODE, skeySpec, iv);
+	//
+	// byte[] original = cipher.doFinal(Base64.decodeBase64(encrypted));
+	//
+	// return new String(original);
+	// } catch (Exception ex) {
+	// ex.printStackTrace();
+	// }
+	//
+	// return null;
+	// }
 
 	/**
 	 * Para la generación de la firma digital... TODO
