@@ -2,6 +2,8 @@ package p6;
 
 import java.util.Scanner;
 
+import org.owasp.esapi.ESAPI;
+
 public class Leer {
 
 	public static void main(String[] args) {
@@ -31,9 +33,13 @@ public class Leer {
 			}
 		}
 		
-		if(args.length==0){
+		if(false && args.length==0){
 			System.err.println("Uso incorrecto del programa.");
 			System.out.println("Uso del programa: leer [-v|-c] {-e[SQL|HTML|URL]}*");
+		}
+		
+		if(true){
+			System.out.println(ESAPI.encoder().canonicalize("hola"));;
 		}
 		
 		// Funcionamiento principal del programa
@@ -54,5 +60,7 @@ public class Leer {
 		if(e[0] || e[1] || e[2]){
 			// TODO
 		}
+		
+		
 	}
 }
