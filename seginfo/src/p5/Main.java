@@ -1,5 +1,7 @@
 package p5;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
@@ -22,8 +24,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
-import org.bouncycastle.jce.X509Principal;
-import org.bouncycastle.x509.X509V3CertificateGenerator;
+import java.util.Scanner;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -31,6 +32,9 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
+
+import org.bouncycastle.jce.X509Principal;
+import org.bouncycastle.x509.X509V3CertificateGenerator;
 
 /**
  * 
@@ -53,6 +57,7 @@ public class Main {
 	final private static String PASSWORD = "VIVAPODEMOS";
 	final private static boolean debug = false;
 	final private static int VECES = 50;
+	final private static String DIR_NAME = "Minizaguan";
 	private static PublicKey pub = null;
 
 	@SuppressWarnings("unused")
@@ -87,8 +92,8 @@ public class Main {
 			mediaTiempoSecretKey = mediaTiempoSecretKey + durationSecretKey;
 		}
 		mediaTiempoSecretKey = mediaTiempoSecretKey / ((double) VECES);
-		System.out.println(
-				"Tiempo medio de " + VECES + " calculos de clave secreta:\t\t" + mediaTiempoSecretKey + " milisegundos");
+		System.out.println("Tiempo medio de " + VECES + " calculos de clave secreta:\t\t" + mediaTiempoSecretKey
+				+ " milisegundos");
 
 		/* Almacenar clave secreta */
 		secretKeyTest(KEY_LENGTHS[0], ALGORITMOS[1], ks, true);
@@ -101,24 +106,55 @@ public class Main {
 			mediaTiempoPriPub = mediaTiempoPriPub + durationPriPub;
 		}
 		mediaTiempoSecretKey = mediaTiempoSecretKey / ((double) VECES);
-		System.out.println(
-				"Tiempo medio de " + VECES + " calculos de clave publica/privada:\t" + mediaTiempoPriPub+ " milisegundos");
-		
+		System.out.println("Tiempo medio de " + VECES + " calculos de clave publica/privada:\t" + mediaTiempoPriPub
+				+ " milisegundos");
+
 		/* Almacenar clave privada (la publica es un atributo de la clase) */
 		privatePublicKeyTest(KEY_LENGTHS[1], ALGORITMOS[2], ALGORITMOS[3], ks, true);
 		PrivateKey pri = (PrivateKey) ks.getKey("privatekey", PASSWORD.toCharArray());
 
 		// TODO
-		/* Encriptado clave secreta */
-		System.out.println("=====TEST ENCRIPTADO CLAVE SECRETA=====");
-		encryptSecretKey(secrEntry.getSecretKey(), secrEntry.getSecretKey(), MENSAJE, ALGORITMOS[1], BLOCKSPADDING[0]);
+		/* Genera un vector de bytes para utilizar en caso de clave secreta */
+		String initVector = "RandomInitVector"; // 16 bytes IV
+		IvParameterSpec iv = new IvParameterSpec(initVector.getBytes("UTF-8"));
 
-		/* Encriptado clave publica/privada */
-		encryptPublicKey(pub, MENSAJE, ALGORITMOS[2], BLOCKSPADDING[1]);
-
-		/* Firma digital */
-		double durationDigitalSignature = digitalSignatureTest(pub, pri);
-
+		/* Lee los ficheros y los cifra */
+		File dir = new File(DIR_NAME);
+		if (dir.exists()) {
+			File[] ficheros = dir.listFiles();
+			double tiempoMedioCifrado = 0.0;
+			double tiempoMedioDescifrado = 0.0;
+			
+			for (int i = 0; i < ficheros.length; i++) {
+				
+				/* Genera las claves secretas */
+				SecretKey secKey = SecurityUtils.generateSecretKey(KEY_LENGTHS[0], ALGORITMOS[1]);
+				
+				/* Lee un fichero */
+				String mensaje = leerFichero(ficheros[i]);
+				
+				/* Cifra el contenido de un fichero */
+				long startTime = System.nanoTime();
+				String mensajeEnc = encrypt(secKey, iv, mensaje, ALGORITMOS[1], BLOCKSPADDING[0]);
+				long endTime = System.nanoTime();
+				double tiempoCifrado = (endTime - startTime) / (1000000.0);
+				
+				/* Descifra el contenido de un fichero cifrado */
+				startTime = System.nanoTime();
+				String mensajeFinal = decrypt(secKey, iv, mensajeEnc, ALGORITMOS[1], BLOCKSPADDING[0]);
+				endTime = System.nanoTime();
+				double tiempoDescifrado = (endTime - startTime) / (1000000.0);
+				
+				tiempoMedioCifrado += tiempoCifrado;
+				tiempoMedioDescifrado += tiempoDescifrado;
+				
+			}
+			tiempoMedioCifrado = tiempoMedioCifrado / ficheros.length;
+			tiempoMedioDescifrado /= tiempoMedioDescifrado / ficheros.length;
+			
+			System.out.println("Tiempo medio cifrado de" + ficheros.length + "documentos: " + tiempoMedioCifrado + "ms.");
+			System.out.println("Tiempo medio descifrado de" + ficheros.length + "documentos: " + tiempoMedioDescifrado + "ms.");
+		}
 	}
 
 	public static X509Certificate generateCertificate(KeyPair keyPair, String alg)
@@ -261,78 +297,15 @@ public class Main {
 	 * @throws UnsupportedEncodingException
 	 * @throws InvalidAlgorithmParameterException
 	 */
-	private static double encryptSecretKey(Key puKey, Key prKey, String msg, String alg, String pad)
+	private static String encrypt(PublicKey puKey, String msg, String alg, String pad)
 			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException,
 			BadPaddingException, UnsupportedEncodingException, InvalidAlgorithmParameterException {
-		System.out.println("=-=-=-=Encriptar texto=-=-=-=");
-		System.out.println("Comienzo de encriptado");
-		System.out.println("Encriptando...");
-
-		/* Genera un vector de bytes para utilizar en caso de clave secreta */
-		String initVector = "RandomInitVector"; // 16 bytes IV
-		IvParameterSpec iv = new IvParameterSpec(initVector.getBytes("UTF-8"));
-		Cipher cipher = Cipher.getInstance(alg + pad);
-
-		/* Cifra el mensaje con la clave secreta */
-		cipher.init(Cipher.ENCRYPT_MODE, puKey, iv);
-
-		/* Mide el tiempo de cifrado para la clave secreta */
-		long startTime = System.nanoTime();
-		byte[] cipherText = cipher.doFinal(msg.getBytes());
-		long endTime = System.nanoTime();
-		double duration = (endTime - startTime) / (1000000.0);
-
-		String finalEncrypt = new String(cipherText, "UTF8");
-		System.out.println("Finalizado el encriptado:\t" + finalEncrypt);
-		System.out.println("Desencriptando para certificar");
-
-		/* Descifra el mensaje con la clave secreta */
-		Cipher cipher2 = Cipher.getInstance(alg + pad);
-		cipher2.init(Cipher.DECRYPT_MODE, prKey, iv);
-
-		String finalDeEncrypt = new String(cipher2.doFinal(cipherText), "UTF8");
-		System.out.println("Desencriptado: " + finalDeEncrypt);
-		System.out.println("Tiempo de ejecución de cifrado de texto: " + duration + " milisegundos");
-		System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
-		return duration;
-	}
-
-	/**
-	 * Para la encriptacion del texto... TODO
-	 * 
-	 * @return el tiempo que ha costado encriptar el texto
-	 * @throws NoSuchPaddingException
-	 * @throws NoSuchAlgorithmException
-	 * @throws InvalidKeyException
-	 * @throws BadPaddingException
-	 * @throws IllegalBlockSizeException
-	 * @throws UnsupportedEncodingException
-	 * @throws InvalidAlgorithmParameterException
-	 */
-	private static String encryptPublicKey(PublicKey puKey, String msg, String alg, String pad)
-			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException,
-			BadPaddingException, UnsupportedEncodingException, InvalidAlgorithmParameterException {
-		System.out.println("=-=-=-=Encriptar texto=-=-=-=");
-		System.out.println("Comienzo de encriptado");
-		System.out.println("Encriptando...");
 
 		/* Cifra el mensaje con la clave publica */
 		Cipher cipher = Cipher.getInstance(alg + pad);
 		cipher.init(Cipher.ENCRYPT_MODE, puKey);
-
-		/* Mide el tiempo de cifrado para la clave publica */
-		long startTime = System.nanoTime();
 		byte[] cipherText = cipher.doFinal(msg.getBytes());
-		long endTime = System.nanoTime();
-		double duration = (endTime - startTime) / (1000000.0);
-
-		String finalEncrypt = new String(cipherText, "UTF8");
-		System.out.println("Finalizado el encriptado:\t" + finalEncrypt);
-		System.out.println("Desencriptando para certificar");
-
-		System.out.println("Tiempo de ejecución de cifrado de texto: " + duration + " milisegundos");
-		System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
-		return finalEncrypt;
+		return new String(cipherText, "UTF8");
 	}
 
 	/**
@@ -347,28 +320,61 @@ public class Main {
 	 * @throws UnsupportedEncodingException
 	 * @throws InvalidAlgorithmParameterException
 	 */
-	private static double decrypt(PrivateKey prKey, String msg, String alg, String pad)
+	private static String encrypt(SecretKey secK, IvParameterSpec iv, String msg, String alg, String pad)
 			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException,
 			BadPaddingException, UnsupportedEncodingException, InvalidAlgorithmParameterException {
-		System.out.println("=-=-=-=Encriptar texto=-=-=-=");
-		System.out.println("Comienzo de encriptado");
-		System.out.println("Encriptando...");
+
+		/* Cifra el mensaje con la clave secreta */
+		Cipher cipher = Cipher.getInstance(alg + pad);
+		cipher.init(Cipher.ENCRYPT_MODE, secK, iv);
+		byte[] cipherText = cipher.doFinal(msg.getBytes());
+		return new String(cipherText, "UTF8");
+	}
+
+	/**
+	 * Para la encriptacion del texto... TODO
+	 * 
+	 * @return el tiempo que ha costado encriptar el texto
+	 * @throws NoSuchPaddingException
+	 * @throws NoSuchAlgorithmException
+	 * @throws InvalidKeyException
+	 * @throws BadPaddingException
+	 * @throws IllegalBlockSizeException
+	 * @throws UnsupportedEncodingException
+	 * @throws InvalidAlgorithmParameterException
+	 */
+	private static String decrypt(PrivateKey prKey, String msg, String alg, String pad)
+			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException,
+			BadPaddingException, UnsupportedEncodingException, InvalidAlgorithmParameterException {
 
 		/* Descifra el mensaje con la clave privada */
 		Cipher cipher2 = Cipher.getInstance(alg + pad);
 		cipher2.init(Cipher.DECRYPT_MODE, prKey);
-
-		/* Mide el tiempo de cifrado para la clave publica */
 		byte[] cipherText = cipher2.doFinal(msg.getBytes());
-		long startTime = System.nanoTime();
-		String finalDeEncrypt = new String(cipher2.doFinal(cipherText), "UTF8");
-		long endTime = System.nanoTime();
-		long duration = (endTime - startTime) / (long) (1000000.0);
+		return new String(cipher2.doFinal(cipherText), "UTF8");
+	}
 
-		System.out.println("Desencriptado: " + finalDeEncrypt);
-		System.out.println("Tiempo de ejecución de descifrado de texto: " + duration + " milisegundos");
-		System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
-		return duration;
+	/**
+	 * Para la encriptacion del texto... TODO
+	 * 
+	 * @return el tiempo que ha costado encriptar el texto
+	 * @throws NoSuchPaddingException
+	 * @throws NoSuchAlgorithmException
+	 * @throws InvalidKeyException
+	 * @throws BadPaddingException
+	 * @throws IllegalBlockSizeException
+	 * @throws UnsupportedEncodingException
+	 * @throws InvalidAlgorithmParameterException
+	 */
+	private static String decrypt(SecretKey secK, IvParameterSpec iv, String msg, String alg, String pad)
+			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException,
+			BadPaddingException, UnsupportedEncodingException, InvalidAlgorithmParameterException {
+
+		/* Descifra el mensaje con la clave privada */
+		Cipher cipher2 = Cipher.getInstance(alg + pad);
+		cipher2.init(Cipher.DECRYPT_MODE, secK, iv);
+		byte[] cipherText = cipher2.doFinal(msg.getBytes());
+		return new String(cipher2.doFinal(cipherText), "UTF8");
 	}
 
 	/**
@@ -391,5 +397,17 @@ public class Main {
 		System.out.println("Tiempo de ejecución de creacion de firma digital: " + duration + " milisegundos");
 		System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
 		return duration;
+	}
+
+	private static String leerFichero(File file) throws FileNotFoundException{
+		
+		String contenidoFichero = "";
+		Scanner leer = new Scanner(file);
+		
+		while (leer.hasNextLine()) {
+			contenidoFichero += leer.nextLine();
+		}
+		leer.close();
+		return contenidoFichero;
 	}
 }
