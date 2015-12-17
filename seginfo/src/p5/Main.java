@@ -259,7 +259,7 @@ public class Main {
 	 * @throws UnsupportedEncodingException
 	 * @throws InvalidAlgorithmParameterException
 	 */
-	private static double encryptPublicKey(Key puKey, Key prKey, String msg, String alg, String pad)
+	private static String encrypt(PublicKey puKey, String msg, String alg, String pad)
 			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException,
 			BadPaddingException, UnsupportedEncodingException, InvalidAlgorithmParameterException {
 		System.out.println("=-=-=-=Encriptar texto=-=-=-=");
@@ -279,14 +279,43 @@ public class Main {
 		String finalEncrypt = new String(cipherText, "UTF8");
 		System.out.println("Finalizado el encriptado:\t" + finalEncrypt);
 		System.out.println("Desencriptando para certificar");
+		System.out.println("Tiempo de ejecución de cifrado de texto: " + duration + " milisegundos");
+		System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
+		return finalEncrypt;
+	}
+	
+	/**
+	 * Para la encriptacion del texto... TODO
+	 * 
+	 * @return el tiempo que ha costado encriptar el texto
+	 * @throws NoSuchPaddingException
+	 * @throws NoSuchAlgorithmException
+	 * @throws InvalidKeyException
+	 * @throws BadPaddingException
+	 * @throws IllegalBlockSizeException
+	 * @throws UnsupportedEncodingException
+	 * @throws InvalidAlgorithmParameterException
+	 */
+	private static double decrypt(PrivateKey prKey, String msg, String alg, String pad)
+			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException,
+			BadPaddingException, UnsupportedEncodingException, InvalidAlgorithmParameterException {
+		System.out.println("=-=-=-=Encriptar texto=-=-=-=");
+		System.out.println("Comienzo de encriptado");
+		System.out.println("Encriptando...");
 		
 		/* Descifra el mensaje con la clave privada */
 		Cipher cipher2 = Cipher.getInstance(alg + pad);
 		cipher2.init(Cipher.DECRYPT_MODE, prKey);
-		
+
+		/* Mide el tiempo de cifrado para la clave publica */
+		byte[] cipherText = cipher2.doFinal(msg.getBytes());
+		long startTime = System.nanoTime();
 		String finalDeEncrypt = new String(cipher2.doFinal(cipherText), "UTF8");
+		long endTime = System.nanoTime();
+		long duration = (endTime - startTime) / (long) (1000000.0);
+		
 		System.out.println("Desencriptado: " + finalDeEncrypt);
-		System.out.println("Tiempo de ejecución de cifrado de texto: " + duration + " milisegundos");
+		System.out.println("Tiempo de ejecución de descifrado de texto: " + duration + " milisegundos");
 		System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
 		return duration;
 	}
