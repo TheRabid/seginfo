@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
@@ -19,6 +20,7 @@ import java.security.SignatureException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
+import java.text.DecimalFormat;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Scanner;
@@ -47,7 +49,7 @@ import org.bouncycastle.x509.X509V3CertificateGenerator;
 @SuppressWarnings("deprecation")
 public class Main {
 
-	final private static int[] KEY_LENGTHS = { 128, 1024 };
+	final private static int[] KEY_LENGTHS = { 128, 512, 1024, 2048 };
 	final private static String[] ALGORITMOS = { "SHA-256", "AES", "RSA", "SHA256withRSA" };
 	final private static String[] BLOCKSPADDING = { "/CBC/PKCS5Padding", "/CBC/PKCS1Padding" };
 	final private static String MENSAJE = "VIVA PITAAAAAAAAAAAAAAAAAAAAAAAAAAA";
@@ -60,6 +62,9 @@ public class Main {
 	@SuppressWarnings("unused")
 	public static void main(String[] args) throws Exception {
 
+		DecimalFormat df = new DecimalFormat("#.##");
+		df.setRoundingMode(RoundingMode.CEILING);
+
 		/* Hash */
 		double mediaTiempoHash = 0;
 		for (int i = 0; i < VECES; i++) {
@@ -67,7 +72,8 @@ public class Main {
 			mediaTiempoHash = mediaTiempoHash + durationHash;
 		}
 		mediaTiempoHash = mediaTiempoHash / ((double) VECES);
-		System.out.println("Tiempo medio de " + VECES + " calculos de hash:\t\t\t" + mediaTiempoHash + " milisegundos");
+		System.out.println("Tiempo medio de " + VECES + " calculos de hash:\t\t\t\t\t" + df.format(mediaTiempoHash)
+				+ " milisegundos");
 
 		/*
 		 * Creacion del almacen de claves Dado que estamos usando la Java
@@ -86,25 +92,27 @@ public class Main {
 			mediaTiempoSecretKey = mediaTiempoSecretKey + durationSecretKey;
 		}
 		mediaTiempoSecretKey = mediaTiempoSecretKey / ((double) VECES);
-		System.out.println("Tiempo medio de " + VECES + " calculos de clave secreta:\t\t" + mediaTiempoSecretKey
-				+ " milisegundos");
+		System.out.println("Tiempo medio de " + VECES + " calculos de clave secreta:\t\t\t\t"
+				+ df.format(mediaTiempoSecretKey) + " milisegundos");
 
 		/* Almacenar clave secreta */
 		secretKeyTest(KEY_LENGTHS[0], ALGORITMOS[1], ks, true);
 		KeyStore.SecretKeyEntry secrEntry = (KeyStore.SecretKeyEntry) ks.getEntry("secretkey", protParam);
 
 		/* Generar clave publica/privada */
-		double mediaTiempoPriPub = 0;
-		for (int i = 0; i < VECES; i++) {
-			double durationPriPub = privatePublicKeyTest(KEY_LENGTHS[1], ALGORITMOS[2], ALGORITMOS[3], ks, false);
-			mediaTiempoPriPub = mediaTiempoPriPub + durationPriPub;
+		for (int k = 1; k < 4; k++) {
+			double mediaTiempoPriPub = 0;
+			for (int i = 0; i < VECES; i++) {
+				double durationPriPub = privatePublicKeyTest(KEY_LENGTHS[k], ALGORITMOS[2], ALGORITMOS[3], ks, false);
+				mediaTiempoPriPub = mediaTiempoPriPub + durationPriPub;
+			}
+			mediaTiempoSecretKey = mediaTiempoSecretKey / ((double) VECES);
+			System.out.println("Tiempo medio de " + VECES + " calculos de clave publica/privada con tamaño "
+					+ KEY_LENGTHS[k] + ":\t" + df.format(mediaTiempoPriPub) + " milisegundos");
 		}
-		mediaTiempoSecretKey = mediaTiempoSecretKey / ((double) VECES);
-		System.out.println("Tiempo medio de " + VECES + " calculos de clave publica/privada:\t" + mediaTiempoPriPub
-				+ " milisegundos");
 
 		/* Almacenar clave privada (la publica es un atributo de la clase) */
-		privatePublicKeyTest(KEY_LENGTHS[1], ALGORITMOS[2], ALGORITMOS[3], ks, true);
+		privatePublicKeyTest(KEY_LENGTHS[2], ALGORITMOS[2], ALGORITMOS[3], ks, true);
 		PrivateKey pri = (PrivateKey) ks.getKey("privatekey", PASSWORD.toCharArray());
 
 		// TODO
@@ -118,37 +126,75 @@ public class Main {
 			File[] ficheros = dir.listFiles();
 			double tiempoMedioCifrado = 0.0;
 			double tiempoMedioDescifrado = 0.0;
-			
+
+			/* Cifrado y descifrado con clave secreta */
 			for (int i = 0; i < ficheros.length; i++) {
-				
-				/* Genera las claves secretas */
+
+				/* Genera la clave secreta */
 				SecretKey secKey = SecurityUtils.generateSecretKey(KEY_LENGTHS[0], ALGORITMOS[1]);
-				
+
 				/* Lee un fichero */
 				String mensaje = leerFichero(ficheros[i]);
-				System.out.println(mensaje.length());
+
 				/* Cifra el contenido de un fichero */
 				long startTime = System.nanoTime();
 				byte[] mensajeEnc = encrypt(secKey, iv, mensaje, ALGORITMOS[1], BLOCKSPADDING[0]);
 				long endTime = System.nanoTime();
 				double tiempoCifrado = (endTime - startTime) / (1000000.0);
-				
+
 				/* Descifra el contenido de un fichero cifrado */
-				System.out.println(new String(mensajeEnc).length());
 				startTime = System.nanoTime();
 				String mensajeFinal = decrypt(secKey, iv, mensajeEnc, ALGORITMOS[1], BLOCKSPADDING[0]);
 				endTime = System.nanoTime();
 				double tiempoDescifrado = (endTime - startTime) / (1000000.0);
-				
+
 				tiempoMedioCifrado += tiempoCifrado;
 				tiempoMedioDescifrado += tiempoDescifrado;
-				
+
 			}
 			tiempoMedioCifrado = tiempoMedioCifrado / ficheros.length;
-			tiempoMedioDescifrado /= tiempoMedioDescifrado / ficheros.length;
+			tiempoMedioDescifrado = tiempoMedioDescifrado / ficheros.length;
+
+			System.out.println("Tiempo medio cifrado con clave secreta de " + ficheros.length + " documentos:\t\t"
+					+ df.format(tiempoMedioDescifrado) + " ms.");
+			System.out.println("Tiempo medio descifrado con clave secreta de " + ficheros.length + " documentos:\t\t"
+					+ df.format(tiempoMedioDescifrado) + " ms.");
 			
-			System.out.println("Tiempo medio cifrado de" + ficheros.length + "documentos: " + tiempoMedioCifrado + "ms.");
-			System.out.println("Tiempo medio descifrado de" + ficheros.length + "documentos: " + tiempoMedioDescifrado + "ms.");
+			/* Cifrado y descifrado con clave publica/privada */
+			tiempoMedioCifrado = 0.0;
+			tiempoMedioDescifrado = 0.0;
+			for (int i = 0; i < ficheros.length; i++) {
+
+				/* Genera la clave secreta */
+				SecretKey secKey = SecurityUtils.generateSecretKey(KEY_LENGTHS[0], ALGORITMOS[1]);
+				
+				/* Lee un fichero */
+				String mensaje = leerFichero(ficheros[i]);
+
+				/* Cifra el contenido de un fichero con la clave secreta, y la clave secreta con la clave publica */
+				long startTime = System.nanoTime();
+				byte[] mensajeEnc = encrypt(pub, mensaje, ALGORITMOS[2], BLOCKSPADDING[1]);
+				secKey.getEncoded()
+				long endTime = System.nanoTime();
+				double tiempoCifrado = (endTime - startTime) / (1000000.0);
+
+				/* Descifra el contenido de un fichero cifrado */
+				startTime = System.nanoTime();
+				String mensajeFinal = decrypt(pri, mensajeEnc, ALGORITMOS[2], BLOCKSPADDING[0]);
+				endTime = System.nanoTime();
+				double tiempoDescifrado = (endTime - startTime) / (1000000.0);
+
+				tiempoMedioCifrado += tiempoCifrado;
+				tiempoMedioDescifrado += tiempoDescifrado;
+
+			}
+			tiempoMedioCifrado = tiempoMedioCifrado / ficheros.length;
+			tiempoMedioDescifrado = tiempoMedioDescifrado / ficheros.length;
+
+			System.out.println("Tiempo medio cifrado con clave secreta de " + ficheros.length + " documentos:\t\t"
+					+ df.format(tiempoMedioDescifrado) + " ms.");
+			System.out.println("Tiempo medio descifrado con clave secreta de " + ficheros.length + " documentos:\t\t"
+					+ df.format(tiempoMedioDescifrado) + " ms.");
 		}
 	}
 
@@ -292,15 +338,13 @@ public class Main {
 	 * @throws UnsupportedEncodingException
 	 * @throws InvalidAlgorithmParameterException
 	 */
-	private static String encrypt(PublicKey puKey, String msg, String alg, String pad)
-			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException,
-			BadPaddingException, UnsupportedEncodingException, InvalidAlgorithmParameterException {
+	private static byte[] encrypt(PublicKey puKey, String msg, String alg, String pad) throws Exception {
 
 		/* Cifra el mensaje con la clave publica */
-		Cipher cipher = Cipher.getInstance(alg + pad);
+		Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
 		cipher.init(Cipher.ENCRYPT_MODE, puKey);
-		byte[] cipherText = cipher.doFinal(msg.getBytes());
-		return new String(cipherText, "UTF8");
+		byte[] cipherText = cipher.doFinal(msg.getBytes("UTF8"));
+		return cipherText;
 	}
 
 	/**
@@ -316,8 +360,7 @@ public class Main {
 	 * @throws InvalidAlgorithmParameterException
 	 */
 	private static byte[] encrypt(SecretKey secK, IvParameterSpec iv, String msg, String alg, String pad)
-			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException,
-			BadPaddingException, UnsupportedEncodingException, InvalidAlgorithmParameterException {
+			throws Exception {
 
 		/* Cifra el mensaje con la clave secreta */
 		Cipher cipher = Cipher.getInstance(alg + pad);
@@ -338,14 +381,14 @@ public class Main {
 	 * @throws UnsupportedEncodingException
 	 * @throws InvalidAlgorithmParameterException
 	 */
-	private static String decrypt(PrivateKey prKey, String msg, String alg, String pad)
+	private static String decrypt(PrivateKey prKey, byte[] msg, String alg, String pad)
 			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException,
 			BadPaddingException, UnsupportedEncodingException, InvalidAlgorithmParameterException {
 
 		/* Descifra el mensaje con la clave privada */
 		Cipher cipher2 = Cipher.getInstance(alg + pad);
 		cipher2.init(Cipher.DECRYPT_MODE, prKey);
-		byte[] cipherText = cipher2.doFinal(msg.getBytes());
+		byte[] cipherText = cipher2.doFinal(msg);
 		return new String(cipher2.doFinal(cipherText), "UTF8");
 	}
 
@@ -368,7 +411,7 @@ public class Main {
 		Cipher cipher2 = Cipher.getInstance(alg + pad);
 		cipher2.init(Cipher.DECRYPT_MODE, secK, iv);
 		byte[] cipherText = cipher2.doFinal(msg);
-		return new String(cipherText);
+		return new String(cipherText, "UTF8");
 	}
 
 	/**
@@ -393,11 +436,11 @@ public class Main {
 		return duration;
 	}
 
-	private static String leerFichero(File file) throws FileNotFoundException{
-		
+	private static String leerFichero(File file) throws FileNotFoundException {
+
 		String contenidoFichero = "";
 		Scanner leer = new Scanner(file);
-		
+
 		while (leer.hasNextLine()) {
 			contenidoFichero += leer.nextLine();
 		}
