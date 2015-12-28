@@ -2,7 +2,6 @@ package p5;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
@@ -17,10 +16,8 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
-import java.security.UnrecoverableEntryException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
-import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -52,7 +49,7 @@ public class Main {
 
 	final private static int[] KEY_LENGTHS = { 128, 1024 };
 	final private static String[] ALGORITMOS = { "SHA-256", "AES", "RSA", "SHA256withRSA" };
-	final private static String[] BLOCKSPADDING = { "/PCBC/PKCS5Padding", "/ECB/PKCS1Padding" };
+	final private static String[] BLOCKSPADDING = { "/CBC/PKCS5Padding", "/CBC/PKCS1Padding" };
 	final private static String MENSAJE = "VIVA PITAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 	final private static String PASSWORD = "VIVAPODEMOS";
 	final private static boolean debug = false;
@@ -61,10 +58,7 @@ public class Main {
 	private static PublicKey pub = null;
 
 	@SuppressWarnings("unused")
-	public static void main(String[] args) throws KeyStoreException, InvalidKeyException, IllegalStateException,
-			NoSuchProviderException, NoSuchAlgorithmException, SignatureException, CertificateException, IOException,
-			NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, UnrecoverableEntryException,
-			InvalidAlgorithmParameterException {
+	public static void main(String[] args) throws Exception {
 
 		/* Hash */
 		double mediaTiempoHash = 0;
@@ -116,7 +110,7 @@ public class Main {
 		// TODO
 		/* Genera un vector de bytes para utilizar en caso de clave secreta */
 		String initVector = "RandomInitVector"; // 16 bytes IV
-		IvParameterSpec iv = new IvParameterSpec(initVector.getBytes("UTF-8"));
+		IvParameterSpec iv = new IvParameterSpec(initVector.getBytes("UTF8"));
 
 		/* Lee los ficheros y los cifra */
 		File dir = new File(DIR_NAME);
@@ -132,14 +126,15 @@ public class Main {
 				
 				/* Lee un fichero */
 				String mensaje = leerFichero(ficheros[i]);
-				
+				System.out.println(mensaje.length());
 				/* Cifra el contenido de un fichero */
 				long startTime = System.nanoTime();
-				String mensajeEnc = encrypt(secKey, iv, mensaje, ALGORITMOS[1], BLOCKSPADDING[0]);
+				byte[] mensajeEnc = encrypt(secKey, iv, mensaje, ALGORITMOS[1], BLOCKSPADDING[0]);
 				long endTime = System.nanoTime();
 				double tiempoCifrado = (endTime - startTime) / (1000000.0);
 				
 				/* Descifra el contenido de un fichero cifrado */
+				System.out.println(new String(mensajeEnc).length());
 				startTime = System.nanoTime();
 				String mensajeFinal = decrypt(secKey, iv, mensajeEnc, ALGORITMOS[1], BLOCKSPADDING[0]);
 				endTime = System.nanoTime();
@@ -320,15 +315,15 @@ public class Main {
 	 * @throws UnsupportedEncodingException
 	 * @throws InvalidAlgorithmParameterException
 	 */
-	private static String encrypt(SecretKey secK, IvParameterSpec iv, String msg, String alg, String pad)
+	private static byte[] encrypt(SecretKey secK, IvParameterSpec iv, String msg, String alg, String pad)
 			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException,
 			BadPaddingException, UnsupportedEncodingException, InvalidAlgorithmParameterException {
 
 		/* Cifra el mensaje con la clave secreta */
 		Cipher cipher = Cipher.getInstance(alg + pad);
 		cipher.init(Cipher.ENCRYPT_MODE, secK, iv);
-		byte[] cipherText = cipher.doFinal(msg.getBytes());
-		return new String(cipherText, "UTF8");
+		byte[] cipherText = cipher.doFinal(msg.getBytes("UTF8"));
+		return cipherText;
 	}
 
 	/**
@@ -366,15 +361,14 @@ public class Main {
 	 * @throws UnsupportedEncodingException
 	 * @throws InvalidAlgorithmParameterException
 	 */
-	private static String decrypt(SecretKey secK, IvParameterSpec iv, String msg, String alg, String pad)
-			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException,
-			BadPaddingException, UnsupportedEncodingException, InvalidAlgorithmParameterException {
+	private static String decrypt(SecretKey secK, IvParameterSpec iv, byte[] msg, String alg, String pad)
+			throws Exception {
 
 		/* Descifra el mensaje con la clave privada */
 		Cipher cipher2 = Cipher.getInstance(alg + pad);
 		cipher2.init(Cipher.DECRYPT_MODE, secK, iv);
-		byte[] cipherText = cipher2.doFinal(msg.getBytes());
-		return new String(cipher2.doFinal(cipherText), "UTF8");
+		byte[] cipherText = cipher2.doFinal(msg);
+		return new String(cipherText);
 	}
 
 	/**
