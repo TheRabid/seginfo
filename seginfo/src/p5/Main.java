@@ -24,6 +24,7 @@ import java.text.DecimalFormat;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Scanner;
+import java.util.UUID;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -66,6 +67,7 @@ public class Main {
 		df.setRoundingMode(RoundingMode.CEILING);
 
 		/* Hash */
+		System.out.println("Calculando tiempos de ejecucion de generacion de hash...");
 		double mediaTiempoHash = 0;
 		for (int i = 0; i < VECES; i++) {
 			double durationHash = hashTest(MENSAJE, ALGORITMOS[0]);
@@ -74,6 +76,7 @@ public class Main {
 		mediaTiempoHash = mediaTiempoHash / ((double) VECES);
 		System.out.println("Tiempo medio de " + VECES + " calculos de hash:\t\t\t\t\t" + df.format(mediaTiempoHash)
 				+ " milisegundos");
+		System.out.println();
 
 		/*
 		 * Creacion del almacen de claves Dado que estamos usando la Java
@@ -86,6 +89,7 @@ public class Main {
 		KeyStore.ProtectionParameter protParam = new KeyStore.PasswordProtection(PASSWORD.toCharArray());
 
 		/* Generar clave secreta */
+		System.out.println("Calculando tiempos de ejecucion de generacion de clave secreta...");
 		double mediaTiempoSecretKey = 0;
 		for (int i = 0; i < VECES; i++) {
 			double durationSecretKey = secretKeyTest(KEY_LENGTHS[0], ALGORITMOS[1], ks, false);
@@ -94,6 +98,7 @@ public class Main {
 		mediaTiempoSecretKey = mediaTiempoSecretKey / ((double) VECES);
 		System.out.println("Tiempo medio de " + VECES + " calculos de clave secreta:\t\t\t\t"
 				+ df.format(mediaTiempoSecretKey) + " milisegundos");
+		System.out.println();
 
 		/* Almacenar clave secreta */
 		secretKeyTest(KEY_LENGTHS[0], ALGORITMOS[1], ks, true);
@@ -101,6 +106,8 @@ public class Main {
 
 		/* Generar clave publica/privada */
 		for (int k = 1; k < 4; k++) {
+			System.out.println(
+					"Calculando tiempos de generacion de claves publica/privada con tamano " + KEY_LENGTHS[k] + "...");
 			double mediaTiempoPriPub = 0;
 			for (int i = 0; i < VECES; i++) {
 				double durationPriPub = privatePublicKeyTest(KEY_LENGTHS[k], ALGORITMOS[2], ALGORITMOS[3], ks, false);
@@ -109,6 +116,7 @@ public class Main {
 			mediaTiempoSecretKey = mediaTiempoSecretKey / ((double) VECES);
 			System.out.println("Tiempo medio de " + VECES + " calculos de clave publica/privada con tamaño "
 					+ KEY_LENGTHS[k] + ":\t" + df.format(mediaTiempoPriPub) + " milisegundos");
+			System.out.println();
 		}
 
 		/* Almacenar clave privada (la publica es un atributo de la clase) */
@@ -116,6 +124,7 @@ public class Main {
 		PrivateKey pri = (PrivateKey) ks.getKey("privatekey", PASSWORD.toCharArray());
 
 		/* Signature */
+		System.out.println("Calculando tiempos de generacion de firma digital...");
 		double mediaTiempoSign = 0;
 		for (int i = 0; i < VECES; i++) {
 			double durationSign = digitalSignatureTest(pub, pri);
@@ -124,6 +133,7 @@ public class Main {
 		mediaTiempoSign = mediaTiempoSign / ((double) VECES);
 		System.out.println("Tiempo medio de " + VECES + " calculos de firma:\t\t\t\t\t" + df.format(mediaTiempoSign)
 				+ " milisegundos");
+		System.out.println();
 
 		/* Genera un vector de bytes para utilizar en caso de clave secreta */
 		String initVector = "RandomInitVector"; // 16 bytes IV
@@ -136,6 +146,7 @@ public class Main {
 			double tiempoMedioCifrado = 0.0;
 			double tiempoMedioDescifrado = 0.0;
 
+			System.out.println("Calculando tiempos de encriptacion de documentos con clave secreta...");
 			/* Cifrado y descifrado con clave secreta */
 			for (int i = 0; i < ficheros.length; i++) {
 
@@ -168,14 +179,16 @@ public class Main {
 					+ df.format(tiempoMedioDescifrado) + " ms.");
 			System.out.println("Tiempo medio descifrado con clave secreta de " + ficheros.length + " documentos:\t\t"
 					+ df.format(tiempoMedioDescifrado) + " ms.");
+			System.out.println();
 
 			/* Cifrado y descifrado con clave publica/privada */
 			tiempoMedioCifrado = 0.0;
 			tiempoMedioDescifrado = 0.0;
+			System.out.println("Calculando tiempos de encriptacion de mensajes aleatorios con clave publica/privada...");
 			for (int i = 0; i < ficheros.length; i++) {
 
 				/* Lee un fichero */
-				String mensaje = leerFichero(ficheros[i]);
+				String mensaje = generateRandomString(KEY_LENGTHS[2]);
 
 				/*
 				 * Cifra el contenido de un fichero con la clave secreta, y la
@@ -188,7 +201,7 @@ public class Main {
 
 				/* Descifra el contenido de un fichero cifrado */
 				startTime = System.nanoTime();
-				String mensajeFinal = decrypt(pri, mensajeEnc, ALGORITMOS[2], BLOCKSPADDING[0]);
+				String mensajeFinal = decrypt(pri, mensajeEnc, ALGORITMOS[2], BLOCKSPADDING[1]);
 				endTime = System.nanoTime();
 				double tiempoDescifrado = (endTime - startTime) / (1000000.0);
 
@@ -199,9 +212,9 @@ public class Main {
 			tiempoMedioCifrado = tiempoMedioCifrado / ficheros.length;
 			tiempoMedioDescifrado = tiempoMedioDescifrado / ficheros.length;
 
-			System.out.println("Tiempo medio cifrado con clave secreta de " + ficheros.length + " documentos:\t\t"
+			System.out.println("Tiempo medio cifrado con clave publica de " + ficheros.length + " documentos:\t\t"
 					+ df.format(tiempoMedioDescifrado) + " ms.");
-			System.out.println("Tiempo medio descifrado con clave secreta de " + ficheros.length + " documentos:\t\t"
+			System.out.println("Tiempo medio descifrado con clave publica de " + ficheros.length + " documentos:\t\t"
 					+ df.format(tiempoMedioDescifrado) + " ms.");
 		}
 	}
@@ -439,7 +452,7 @@ public class Main {
 		long startTime = System.nanoTime();
 		/* No pasa nada por no usar la variable firma */
 		@SuppressWarnings("unused")
-		Signature firma = SecurityUtils.createDigitalSignature(MENSAJE, pub, priv, ALGORITMOS[0], ALGORITMOS[3]);
+		Signature firma = SecurityUtils.createDigitalSignature(MENSAJE, pub, priv, ALGORITMOS[0], ALGORITMOS[3], debug);
 		long endTime = System.nanoTime();
 		long duration = (endTime - startTime) / (long) (1000000.0);
 
@@ -460,5 +473,19 @@ public class Main {
 		}
 		leer.close();
 		return contenidoFichero;
+	}
+
+	public static String generateRandomString(int keyLengthUsed) {
+		int realSize = (keyLengthUsed / 8) - 11;
+		String uuid = UUID.randomUUID().toString();
+
+		while (uuid.length() < realSize) {
+			uuid = uuid + UUID.randomUUID().toString();
+		}
+
+		if (uuid.length() > realSize) {
+			uuid = uuid.substring(0, realSize);
+		}
+		return uuid;
 	}
 }

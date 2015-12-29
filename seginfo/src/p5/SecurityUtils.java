@@ -62,7 +62,7 @@ public class SecurityUtils {
 		return p;
 	}
 	
-	public static Signature createDigitalSignature(String message, PublicKey pub, PrivateKey priv, String alg1, String alg2) {
+	public static Signature createDigitalSignature(String message, PublicKey pub, PrivateKey priv, String alg1, String alg2, boolean debug) {
 		
 		/* Hash del mensaje */
 		String msg = hashMsg(message, alg1);
@@ -83,7 +83,8 @@ public class SecurityUtils {
 			/* Update and verify the data */
 			dsa.update(msg.getBytes());
 			boolean verifies = dsa.verify(sig);
-			System.out.println("signature verifies: " + verifies);
+			if(debug)
+				System.out.println("signature verifies: " + verifies);
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
 			System.exit(0);
