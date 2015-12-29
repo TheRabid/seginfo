@@ -50,7 +50,7 @@ public class Main {
 	final private static int[] KEY_LENGTHS = { 128, 1024 };
 	final private static String[] ALGORITMOS = { "SHA-256", "AES", "RSA", "SHA256withRSA" };
 	final private static String[] BLOCKSPADDING = { "/PCBC/PKCS5Padding", "/ECB/PKCS1Padding" };
-	final private static String MENSAJE = "VIVA PITAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+	final private static String MENSAJE = "VIVA PITAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB";
 	final private static String PASSWORD = "VIVAPODEMOS";
 	private static PublicKey pub = null;
 
