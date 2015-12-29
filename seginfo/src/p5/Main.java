@@ -115,7 +115,16 @@ public class Main {
 		privatePublicKeyTest(KEY_LENGTHS[2], ALGORITMOS[2], ALGORITMOS[3], ks, true);
 		PrivateKey pri = (PrivateKey) ks.getKey("privatekey", PASSWORD.toCharArray());
 
-		// TODO
+		/* Signature */
+		double mediaTiempoSign = 0;
+		for (int i = 0; i < VECES; i++) {
+			double durationSign = digitalSignatureTest(pub, pri);
+			mediaTiempoSign = mediaTiempoSign + durationSign;
+		}
+		mediaTiempoSign = mediaTiempoSign / ((double) VECES);
+		System.out.println("Tiempo medio de " + VECES + " calculos de firma:\t\t\t\t\t" + df.format(mediaTiempoSign)
+				+ " milisegundos");
+
 		/* Genera un vector de bytes para utilizar en caso de clave secreta */
 		String initVector = "RandomInitVector"; // 16 bytes IV
 		IvParameterSpec iv = new IvParameterSpec(initVector.getBytes("UTF8"));
@@ -159,22 +168,21 @@ public class Main {
 					+ df.format(tiempoMedioDescifrado) + " ms.");
 			System.out.println("Tiempo medio descifrado con clave secreta de " + ficheros.length + " documentos:\t\t"
 					+ df.format(tiempoMedioDescifrado) + " ms.");
-			
+
 			/* Cifrado y descifrado con clave publica/privada */
 			tiempoMedioCifrado = 0.0;
 			tiempoMedioDescifrado = 0.0;
 			for (int i = 0; i < ficheros.length; i++) {
 
-				/* Genera la clave secreta */
-				SecretKey secKey = SecurityUtils.generateSecretKey(KEY_LENGTHS[0], ALGORITMOS[1]);
-				
 				/* Lee un fichero */
 				String mensaje = leerFichero(ficheros[i]);
 
-				/* Cifra el contenido de un fichero con la clave secreta, y la clave secreta con la clave publica */
+				/*
+				 * Cifra el contenido de un fichero con la clave secreta, y la
+				 * clave secreta con la clave publica
+				 */
 				long startTime = System.nanoTime();
 				byte[] mensajeEnc = encrypt(pub, mensaje, ALGORITMOS[2], BLOCKSPADDING[1]);
-				secKey.getEncoded()
 				long endTime = System.nanoTime();
 				double tiempoCifrado = (endTime - startTime) / (1000000.0);
 
@@ -421,18 +429,24 @@ public class Main {
 	 */
 	private static double digitalSignatureTest(PublicKey pub, PrivateKey priv) {
 
-		System.out.println("=-=-=-=Firma digital=-=-=-=");
-		System.out.println("Comienzo de creacion de firma digital");
-		System.out.println("Firmando...");
+		if (debug) {
+			System.out.println("=-=-=-=Firma digital=-=-=-=");
+			System.out.println("Comienzo de creacion de firma digital");
+			System.out.println("Firmando...");
+		}
 
 		/* Mide el tiempo de generacion de la firma digital */
 		long startTime = System.nanoTime();
+		/* No pasa nada por no usar la variable firma */
+		@SuppressWarnings("unused")
 		Signature firma = SecurityUtils.createDigitalSignature(MENSAJE, pub, priv, ALGORITMOS[0], ALGORITMOS[3]);
 		long endTime = System.nanoTime();
 		long duration = (endTime - startTime) / (long) (1000000.0);
 
-		System.out.println("Tiempo de ejecución de creacion de firma digital: " + duration + " milisegundos");
-		System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
+		if (debug) {
+			System.out.println("Tiempo de ejecución de creacion de firma digital: " + duration + " milisegundos");
+			System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
+		}
 		return duration;
 	}
 
