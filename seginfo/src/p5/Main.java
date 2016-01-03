@@ -38,13 +38,17 @@ import org.bouncycastle.x509.X509V3CertificateGenerator;
 
 /**
  * 
- * @author Alejandro Royo Amondarain (NIP: 560285) Jaime Ruiz-Borau Vizárraga
+ * @author Alejandro Royo Amondarain (NIP: 560285) Jaime Ruiz-Borau Vizarraga
  *         (NIP: 546751)
  *
  *         Esta clase contiene el codigo correspondiente a las pruebas y medida
  *         de tiempos de los diferentes metodos de hash, encriptacion y firma
  *         digital solicitados en el guion de la practica 5 de Seguridad
  *         Informatica.
+ * 
+ *         La justificacion a cada una de las decisiones de diseno tomadas
+ *         durante el desarrollo de esta practica se encuentra dentro del metodo
+ *         main como comentario para cada apartado
  */
 
 @SuppressWarnings("deprecation")
@@ -52,7 +56,7 @@ public class Main {
 
 	final private static int[] KEY_LENGTHS = { 128, 512, 1024, 2048 };
 	final private static String[] ALGORITMOS = { "SHA-256", "AES", "RSA", "SHA256withRSA" };
-	final private static String[] BLOCKSPADDING = { "/CBC/PKCS5Padding", "/CBC/PKCS1Padding" };
+	final private static String[] BLOCKSPADDING = { "/CBC/PKCS5Padding", "/ECB/PKCS1Padding" };
 	final private static String MENSAJE = "VIVA PITAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 	final private static String PASSWORD = "VIVAPODEMOS";
 	final private static boolean debug = false;
@@ -67,6 +71,15 @@ public class Main {
 		df.setRoundingMode(RoundingMode.CEILING);
 
 		/* Hash */
+		/**
+		 * Para el hasheo de un mensaje, se ha empleado la clase MessageDigest.
+		 * Se ha optado por el empleo de un algoritmo SHA-256 ya que produce una
+		 * "huella digital" de 256 bits.
+		 * 
+		 * Como habitualmente se emplean los algoritmos MD5 y SHA-1, que son de
+		 * 128 y 160 bits respectivamente, esta implementación proporciona una
+		 * mayor seguridad.
+		 */
 		System.out.println("Calculando tiempos de ejecucion de generacion de hash...");
 		double mediaTiempoHash = 0;
 		for (int i = 0; i < VECES; i++) {
@@ -78,9 +91,10 @@ public class Main {
 				+ " milisegundos");
 		System.out.println();
 
-		/*
-		 * Creacion del almacen de claves Dado que estamos usando la Java
-		 * Cryptography Extension, el almacén de claves será de tipo JCEKS
+		/* Almacen de claves */
+		/**
+		 * Creacion del almacen de claves. Dado que estamos usando la Java
+		 * Cryptography Extension, el almacen de claves sera de tipo JCEKS
 		 */
 
 		KeyStore ks = null;
@@ -89,6 +103,9 @@ public class Main {
 		KeyStore.ProtectionParameter protParam = new KeyStore.PasswordProtection(PASSWORD.toCharArray());
 
 		/* Generar clave secreta */
+		/**
+		 * TODO
+		 */
 		System.out.println("Calculando tiempos de ejecucion de generacion de clave secreta...");
 		double mediaTiempoSecretKey = 0;
 		for (int i = 0; i < VECES; i++) {
@@ -184,7 +201,8 @@ public class Main {
 			/* Cifrado y descifrado con clave publica/privada */
 			tiempoMedioCifrado = 0.0;
 			tiempoMedioDescifrado = 0.0;
-			System.out.println("Calculando tiempos de encriptacion de mensajes aleatorios con clave publica/privada...");
+			System.out
+					.println("Calculando tiempos de encriptacion de mensajes aleatorios con clave publica/privada...");
 			for (int i = 0; i < ficheros.length; i++) {
 
 				/* Lee un fichero */
@@ -241,15 +259,6 @@ public class Main {
 		return cert.generate(signingKey);
 	}
 
-	/**
-	 * Para el hasheo de un mensaje, se ha empleado la clase MessageDigest. Se
-	 * ha optado por el empleo de un algoritmo SHA-256 ya que produce una
-	 * "huella digital" de 256 bits.
-	 * 
-	 * Como habitualmente se emplean los algoritmos MD5 y SHA-1, que son de 128
-	 * y 160 bits respectivamente, esta implementación proporciona una mayor
-	 * seguridad.
-	 */
 	private static double hashTest(String msg, String alg) throws NoSuchAlgorithmException {
 
 		if (debug) {
@@ -276,8 +285,8 @@ public class Main {
 
 	/**
 	 * Para la generación de una clave secreta se ha elegido el algoritmo AES,
-	 * con un tamaño de clave de 128 bits, ya que es el estándar que sustituyó
-	 * al algorito DES en Estados Unidos.
+	 * con un tamaño de clave de 128 bits, ya que es el estandar que sustituyo
+	 * al algorito DES en Estados Unidos y proporciona una mayor seguridad.
 	 */
 	private static double secretKeyTest(int keyLength, String alg, KeyStore ks, boolean store)
 			throws KeyStoreException {
@@ -348,21 +357,17 @@ public class Main {
 	}
 
 	/**
-	 * Para la encriptacion del texto... TODO
+	 * Para la encriptacion del texto con criptografia de clave publica, como
+	 * vamos a usar una clave de tamano 1024 calculada con el algoritmo RSA,
+	 * utilizaremos el modo de encriptado "ECB" (siglas de Electronic Code Book)
+	 * y el padding PKCS1. El modo ECB
 	 * 
 	 * @return el tiempo que ha costado encriptar el texto
-	 * @throws NoSuchPaddingException
-	 * @throws NoSuchAlgorithmException
-	 * @throws InvalidKeyException
-	 * @throws BadPaddingException
-	 * @throws IllegalBlockSizeException
-	 * @throws UnsupportedEncodingException
-	 * @throws InvalidAlgorithmParameterException
 	 */
 	private static byte[] encrypt(PublicKey puKey, String msg, String alg, String pad) throws Exception {
 
 		/* Cifra el mensaje con la clave publica */
-		Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+		Cipher cipher = Cipher.getInstance("RSA/PCBC/NoPadding");
 		cipher.init(Cipher.ENCRYPT_MODE, puKey);
 		byte[] cipherText = cipher.doFinal(msg.getBytes("UTF8"));
 		return cipherText;
