@@ -25,14 +25,12 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Scanner;
 import java.util.UUID;
-
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
-
 import org.bouncycastle.jce.X509Principal;
 import org.bouncycastle.x509.X509V3CertificateGenerator;
 
@@ -104,7 +102,9 @@ public class Main {
 
 		/* Generar clave secreta */
 		/**
-		 * TODO
+		 * Para la generación de una clave secreta se ha elegido el algoritmo AES,
+		 * con un tamaño de clave de 128 bits, ya que es el estandar que sustituyo
+		 * al algorito DES en Estados Unidos y proporciona una mayor seguridad.
 		 */
 		System.out.println("Calculando tiempos de ejecucion de generacion de clave secreta...");
 		double mediaTiempoSecretKey = 0;
@@ -122,6 +122,10 @@ public class Main {
 		KeyStore.SecretKeyEntry secrEntry = (KeyStore.SecretKeyEntry) ks.getEntry("secretkey", protParam);
 
 		/* Generar clave publica/privada */
+		/**
+		 * Para la generación de una clave privada y publica se ha elegido el algoritmo RSA, con un tamano de clave
+		 * de 1024 bits.
+		 */
 		for (int k = 1; k < 4; k++) {
 			System.out.println(
 					"Calculando tiempos de generacion de claves publica/privada con tamano " + KEY_LENGTHS[k] + "...");
@@ -141,6 +145,9 @@ public class Main {
 		PrivateKey pri = (PrivateKey) ks.getKey("privatekey", PASSWORD.toCharArray());
 
 		/* Signature */
+		/**
+		 * TODO
+		 */
 		System.out.println("Calculando tiempos de generacion de firma digital...");
 		double mediaTiempoSign = 0;
 		for (int i = 0; i < VECES; i++) {
@@ -283,11 +290,6 @@ public class Main {
 		return duration;
 	}
 
-	/**
-	 * Para la generación de una clave secreta se ha elegido el algoritmo AES,
-	 * con un tamaño de clave de 128 bits, ya que es el estandar que sustituyo
-	 * al algorito DES en Estados Unidos y proporciona una mayor seguridad.
-	 */
 	private static double secretKeyTest(int keyLength, String alg, KeyStore ks, boolean store)
 			throws KeyStoreException {
 
@@ -317,11 +319,6 @@ public class Main {
 		return duration;
 	}
 
-	/**
-	 * Para la generación de una clave privada y publica... TODO
-	 * 
-	 * @return el tiempo que ha costado generar la clave privada/publica
-	 */
 	private static double privatePublicKeyTest(int keyLength, String alg, String algCert, KeyStore ks, boolean store)
 			throws CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException,
 			NoSuchAlgorithmException, SignatureException, KeyStoreException {
@@ -367,7 +364,7 @@ public class Main {
 	private static byte[] encrypt(PublicKey puKey, String msg, String alg, String pad) throws Exception {
 
 		/* Cifra el mensaje con la clave publica */
-		Cipher cipher = Cipher.getInstance("RSA/PCBC/NoPadding");
+		Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
 		cipher.init(Cipher.ENCRYPT_MODE, puKey);
 		byte[] cipherText = cipher.doFinal(msg.getBytes("UTF8"));
 		return cipherText;
@@ -412,10 +409,10 @@ public class Main {
 			BadPaddingException, UnsupportedEncodingException, InvalidAlgorithmParameterException {
 
 		/* Descifra el mensaje con la clave privada */
-		Cipher cipher2 = Cipher.getInstance(alg + pad);
+		Cipher cipher2 = Cipher.getInstance("RSA/ECB/PKCS1Padding");
 		cipher2.init(Cipher.DECRYPT_MODE, prKey);
 		byte[] cipherText = cipher2.doFinal(msg);
-		return new String(cipher2.doFinal(cipherText), "UTF8");
+		return new String(cipherText, "UTF8");
 	}
 
 	/**
