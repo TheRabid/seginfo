@@ -23,8 +23,6 @@ import java.security.cert.X509Certificate;
 import java.text.DecimalFormat;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Scanner;
 import java.util.UUID;
 
@@ -40,17 +38,44 @@ import org.bouncycastle.x509.X509V3CertificateGenerator;
 
 /**
  * 
- * @author Alejandro Royo Amondarain (NIP: 560285) Jaime Ruiz-Borau Vizarraga
- *         (NIP: 546751)
+ * @author Alejandro Royo Amondarain (NIP: 560285)
+ * 		   Jaime Ruiz-Borau Vizarraga (NIP: 546751)
  *
  *         Esta clase contiene el codigo correspondiente a las pruebas y medida
  *         de tiempos de los diferentes metodos de hash, encriptacion y firma
  *         digital solicitados en el guion de la practica 5 de Seguridad
  *         Informatica.
+ *         
+ *         Justificaciones:
+ *         
+ *         	-HASH:
+ *         		Para el hasheo de un mensaje, se ha optado por el empleo de un
+ *         		algoritmo SHA-256 ya que produce una "huella digital" de 256 bits.
  * 
- *         La justificacion a cada una de las decisiones de diseno tomadas
- *         durante el desarrollo de esta practica se encuentra dentro del metodo
- *         main como comentario para cada apartado
+ * 				Como habitualmente se emplean los algoritmos MD5 y SHA-1, que son de
+ * 				128 y 160 bits respectivamente, esta implementación proporciona una
+ * 				mayor seguridad.
+ * 
+ *         	-FIRMA DIGITAL:
+ *         		Para la firma digital se ha optado por el algoritmo de hash
+ *         		SHA-256 con encriptado de RSA. La eleccion de RSA se debe a
+ *         		que es el mas utilizado actualmente.
+ *         
+ *         	-CLAVE PUBLICA/PRIVADA:
+ * 				Para la generación de una clave privada y publica se ha elegido
+ * 				el algoritmo RSA, con un tamano de clave de 1024 bits. Se ha
+ * 				utilizado el modo de encriptado "ECB" (Electronic Code Book)
+ * 				y el padding PKCS1.
+ * 
+ * 				Los motivos de esta decision son que el algoritmo RSA es mas
+ * 				rapido computacionalmente que otros algoritmos como el DSA.
+ *         		
+ *          -CLAVE SECRETA:
+ *          	Para la generación de una clave secreta se ha elegido el 
+ *          	algoritmo AES, con un tamano de clave de 128 bits, ya que es 
+ *          	el estandar que sustituyo al algorito DES en Estados Unidos y
+ *          	ha demostrado ser mas seguro y rapido que el propio DES o su
+ *          	variante TDES.
  */
 
 @SuppressWarnings("deprecation")
@@ -59,8 +84,8 @@ public class Main {
 	final private static int[] KEY_LENGTHS = { 128, 512, 1024, 2048 };
 	final private static String[] ALGORITMOS = { "SHA-256", "AES", "RSA", "SHA256withRSA" };
 	final private static String[] BLOCKSPADDING = { "/CBC/PKCS5Padding", "/ECB/PKCS1Padding" };
-	final private static String MENSAJE = "VIVA PITAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-	final private static String PASSWORD = "VIVAPODEMOS";
+	final private static String MENSAJE = "Mensaje de prueba";
+	final private static String PASSWORD = "password";
 	final private static boolean debug = false;
 	final private static int VECES = 50;
 	final private static String DIR_NAME = "Minizaguan";
@@ -73,15 +98,6 @@ public class Main {
 		df.setRoundingMode(RoundingMode.CEILING);
 
 		/* Hash */
-		/**
-		 * Para el hasheo de un mensaje, se ha empleado la clase MessageDigest.
-		 * Se ha optado por el empleo de un algoritmo SHA-256 ya que produce una
-		 * "huella digital" de 256 bits.
-		 * 
-		 * Como habitualmente se emplean los algoritmos MD5 y SHA-1, que son de
-		 * 128 y 160 bits respectivamente, esta implementación proporciona una
-		 * mayor seguridad.
-		 */
 		System.out.println("Calculando tiempos de ejecucion de generacion de hash...");
 		double mediaTiempoHash = 0;
 		for (int i = 0; i < VECES; i++) {
@@ -105,11 +121,6 @@ public class Main {
 		KeyStore.ProtectionParameter protParam = new KeyStore.PasswordProtection(PASSWORD.toCharArray());
 
 		/* Generar clave secreta */
-		/**
-		 * Para la generación de una clave secreta se ha elegido el algoritmo AES,
-		 * con un tamaño de clave de 128 bits, ya que es el estandar que sustituyo
-		 * al algorito DES en Estados Unidos y proporciona una mayor seguridad.
-		 */
 		System.out.println("Calculando tiempos de ejecucion de generacion de clave secreta...");
 		double mediaTiempoSecretKey = 0;
 		for (int i = 0; i < VECES; i++) {
@@ -126,10 +137,6 @@ public class Main {
 		KeyStore.SecretKeyEntry secrEntry = (KeyStore.SecretKeyEntry) ks.getEntry("secretkey", protParam);
 
 		/* Generar clave publica/privada */
-		/**
-		 * Para la generación de una clave privada y publica se ha elegido el algoritmo RSA, con un tamano de clave
-		 * de 1024 bits.
-		 */
 		for (int k = 1; k < 4; k++) {
 			System.out.println(
 					"Calculando tiempos de generacion de claves publica/privada con tamano " + KEY_LENGTHS[k] + "...");
@@ -139,7 +146,7 @@ public class Main {
 				mediaTiempoPriPub = mediaTiempoPriPub + durationPriPub;
 			}
 			mediaTiempoSecretKey = mediaTiempoSecretKey / ((double) VECES);
-			System.out.println("Tiempo medio de " + VECES + " calculos de clave publica/privada con tamaño "
+			System.out.println("Tiempo medio de " + VECES + " calculos de clave publica/privada con tamano "
 					+ KEY_LENGTHS[k] + ":\t" + df.format(mediaTiempoPriPub) + " milisegundos");
 			System.out.println();
 		}
@@ -148,10 +155,7 @@ public class Main {
 		privatePublicKeyTest(KEY_LENGTHS[2], ALGORITMOS[2], ALGORITMOS[3], ks, true);
 		PrivateKey pri = (PrivateKey) ks.getKey("privatekey", PASSWORD.toCharArray());
 
-		/* Signature */
-		/**
-		 * TODO
-		 */
+		/* Firma digital */
 		System.out.println("Calculando tiempos de generacion de firma digital...");
 		double mediaTiempoSign = 0;
 		for (int i = 0; i < VECES; i++) {
@@ -399,11 +403,6 @@ public class Main {
 	}
 
 	/**
-	 * Para la encriptacion del texto con criptografia de clave publica, como
-	 * vamos a usar una clave de tamano 1024 calculada con el algoritmo RSA,
-	 * utilizaremos el modo de encriptado "ECB" (siglas de Electronic Code Book)
-	 * y el padding PKCS1. El modo ECB
-	 * 
 	 * @return el tiempo que ha costado encriptar el texto
 	 */
 	private static byte[] encrypt(PublicKey puKey, String msg, String alg, String pad) throws Exception {
@@ -415,9 +414,7 @@ public class Main {
 		return cipherText;
 	}
 
-	/**
-	 * Para la encriptacion del texto... TODO
-	 * 
+	/** 
 	 * @return el tiempo que ha costado encriptar el texto
 	 * @throws NoSuchPaddingException
 	 * @throws NoSuchAlgorithmException
@@ -438,8 +435,6 @@ public class Main {
 	}
 
 	/**
-	 * Para la encriptacion del texto... TODO
-	 * 
 	 * @return el tiempo que ha costado encriptar el texto
 	 * @throws NoSuchPaddingException
 	 * @throws NoSuchAlgorithmException
@@ -461,8 +456,6 @@ public class Main {
 	}
 
 	/**
-	 * Para la encriptacion del texto... TODO
-	 * 
 	 * @return el tiempo que ha costado encriptar el texto
 	 * @throws NoSuchPaddingException
 	 * @throws NoSuchAlgorithmException
@@ -483,8 +476,6 @@ public class Main {
 	}
 
 	/**
-	 * Para la generación de la firma digital... TODO
-	 * 
 	 * @return el tiempo que ha costado generar la firma digital
 	 */
 	private static double digitalSignatureTest(PublicKey pub, PrivateKey priv) {
