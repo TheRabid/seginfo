@@ -23,14 +23,18 @@ import java.security.cert.X509Certificate;
 import java.text.DecimalFormat;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Scanner;
 import java.util.UUID;
+
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
+
 import org.bouncycastle.jce.X509Principal;
 import org.bouncycastle.x509.X509V3CertificateGenerator;
 
@@ -204,44 +208,85 @@ public class Main {
 			System.out.println("Tiempo medio descifrado con clave secreta de " + ficheros.length + " documentos:\t\t"
 					+ df.format(tiempoMedioDescifrado) + " ms.");
 			System.out.println();
-
-			/* Cifrado y descifrado con clave publica/privada */
-			tiempoMedioCifrado = 0.0;
-			tiempoMedioDescifrado = 0.0;
-			System.out
-					.println("Calculando tiempos de encriptacion de mensajes aleatorios con clave publica/privada...");
-			for (int i = 0; i < ficheros.length; i++) {
-
-				/* Lee un fichero */
-				String mensaje = generateRandomString(KEY_LENGTHS[2]);
-
-				/*
-				 * Cifra el contenido de un fichero con la clave secreta, y la
-				 * clave secreta con la clave publica
-				 */
-				long startTime = System.nanoTime();
-				byte[] mensajeEnc = encrypt(pub, mensaje, ALGORITMOS[2], BLOCKSPADDING[1]);
-				long endTime = System.nanoTime();
-				double tiempoCifrado = (endTime - startTime) / (1000000.0);
-
-				/* Descifra el contenido de un fichero cifrado */
-				startTime = System.nanoTime();
-				String mensajeFinal = decrypt(pri, mensajeEnc, ALGORITMOS[2], BLOCKSPADDING[1]);
-				endTime = System.nanoTime();
-				double tiempoDescifrado = (endTime - startTime) / (1000000.0);
-
-				tiempoMedioCifrado += tiempoCifrado;
-				tiempoMedioDescifrado += tiempoDescifrado;
-
-			}
-			tiempoMedioCifrado = tiempoMedioCifrado / ficheros.length;
-			tiempoMedioDescifrado = tiempoMedioDescifrado / ficheros.length;
-
-			System.out.println("Tiempo medio cifrado con clave publica de " + ficheros.length + " documentos:\t\t"
-					+ df.format(tiempoMedioDescifrado) + " ms.");
-			System.out.println("Tiempo medio descifrado con clave publica de " + ficheros.length + " documentos:\t\t"
-					+ df.format(tiempoMedioDescifrado) + " ms.");
 		}
+		
+		/* Cifrado y descifrado con clave secreta */
+		double tiempoMedioCifrado = 0.0;
+		double tiempoMedioDescifrado = 0.0;
+		int veces = 100;
+		System.out
+				.println("Calculando tiempos de encriptacion de mensajes aleatorios con clave secreta...");
+		for (int i = 0; i < veces; i++) {
+
+			SecretKey secKey = SecurityUtils.generateSecretKey(KEY_LENGTHS[0], ALGORITMOS[1]);
+			
+			/* Genera un mensaje random */
+			String mensaje = generateRandomString(KEY_LENGTHS[2]);
+
+			/*
+			 * Cifra el mensaje con la clave secreta, y la
+			 * clave secreta con la clave publica
+			 */
+			long startTime = System.nanoTime();
+			byte[] mensajeEnc = encrypt(secKey, iv, mensaje, ALGORITMOS[1], BLOCKSPADDING[0]);
+			long endTime = System.nanoTime();
+			double tiempoCifrado = (endTime - startTime) / (1000000.0);
+
+			/* Descifra el mensaje cifrado */
+			startTime = System.nanoTime();
+			String mensajeFinal = decrypt(secKey, iv, mensajeEnc, ALGORITMOS[1], BLOCKSPADDING[0]);
+			endTime = System.nanoTime();
+			double tiempoDescifrado = (endTime - startTime) / (1000000.0);
+
+			tiempoMedioCifrado += tiempoCifrado;
+			tiempoMedioDescifrado += tiempoDescifrado;
+
+		}
+		tiempoMedioCifrado = tiempoMedioCifrado / veces;
+		tiempoMedioDescifrado = tiempoMedioDescifrado / veces;
+
+		System.out.println("Tiempo medio cifrado con clave secreta de " + veces + " documentos:\t\t"
+				+ df.format(tiempoMedioDescifrado) + " ms.");
+		System.out.println("Tiempo medio descifrado con clave secreta de " + veces + " documentos:\t\t"
+				+ df.format(tiempoMedioDescifrado) + " ms.");
+		System.out.println();
+		
+		/* Cifrado y descifrado con clave publica/privada */
+		tiempoMedioCifrado = 0.0;
+		tiempoMedioDescifrado = 0.0;
+		System.out
+				.println("Calculando tiempos de encriptacion de mensajes aleatorios con clave publica/privada...");
+		for (int i = 0; i < veces; i++) {
+
+			/* Genera un mensaje random */
+			String mensaje = generateRandomString(KEY_LENGTHS[2]);
+
+			/*
+			 * Cifra el mensaje con la clave secreta, y la
+			 * clave secreta con la clave publica
+			 */
+			long startTime = System.nanoTime();
+			byte[] mensajeEnc = encrypt(pub, mensaje, ALGORITMOS[2], BLOCKSPADDING[1]);
+			long endTime = System.nanoTime();
+			double tiempoCifrado = (endTime - startTime) / (1000000.0);
+
+			/* Descifra el mensaje cifrado */
+			startTime = System.nanoTime();
+			String mensajeFinal = decrypt(pri, mensajeEnc, ALGORITMOS[2], BLOCKSPADDING[1]);
+			endTime = System.nanoTime();
+			double tiempoDescifrado = (endTime - startTime) / (1000000.0);
+
+			tiempoMedioCifrado += tiempoCifrado;
+			tiempoMedioDescifrado += tiempoDescifrado;
+
+		}
+		tiempoMedioCifrado = tiempoMedioCifrado / veces;
+		tiempoMedioDescifrado = tiempoMedioDescifrado / veces;
+
+		System.out.println("Tiempo medio cifrado con clave publica de " + veces + " documentos:\t\t"
+				+ df.format(tiempoMedioDescifrado) + " ms.");
+		System.out.println("Tiempo medio descifrado con clave publica de " + veces + " documentos:\t\t"
+				+ df.format(tiempoMedioDescifrado) + " ms.");
 	}
 
 	public static X509Certificate generateCertificate(KeyPair keyPair, String alg)
