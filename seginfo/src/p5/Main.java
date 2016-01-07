@@ -76,6 +76,9 @@ import org.bouncycastle.x509.X509V3CertificateGenerator;
  *          	el estandar que sustituyo al algorito DES en Estados Unidos y
  *          	ha demostrado ser mas seguro y rapido que el propio DES o su
  *          	variante TDES.
+ *          
+ *          Como bola extra, cabe mencionar que se ha empleado el proveedor externo
+ *          BouncyCastle en la generacion de la firma digital
  */
 
 @SuppressWarnings("deprecation")
