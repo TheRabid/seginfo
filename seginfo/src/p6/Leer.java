@@ -10,8 +10,8 @@ import org.owasp.esapi.reference.DefaultValidator;
 
 /**
  * 
- * @author Alejandro Royo Amondarain (NIP: 560285) Jaime Ruiz-Borau Vizarraga
- *         (NIP: 546751)
+ * @author Alejandro Royo Amondarain (NIP: 560285) 
+ * @author Jaime Ruiz-Borau Vizarraga (NIP: 546751)
  *
  *         Clase Leer. Contiene el funcionamiento principal del programa
  *         solicitado en el guion de la practica 6.
