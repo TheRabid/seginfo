@@ -53,7 +53,7 @@ import org.bouncycastle.x509.X509V3CertificateGenerator;
  *         		algoritmo SHA-256 ya que produce una "huella digital" de 256 bits.
  * 
  * 				Como habitualmente se emplean los algoritmos MD5 y SHA-1, que son de
- * 				128 y 160 bits respectivamente, esta implementación proporciona una
+ * 				128 y 160 bits respectivamente, esta implementaciï¿½n proporciona una
  * 				mayor seguridad.
  * 
  *         	-FIRMA DIGITAL:
@@ -62,7 +62,7 @@ import org.bouncycastle.x509.X509V3CertificateGenerator;
  *         		que es el mas utilizado actualmente.
  *         
  *         	-CLAVE PUBLICA/PRIVADA:
- * 				Para la generación de una clave privada y publica se ha elegido
+ * 				Para la generaciÃ³n de una clave privada y publica se ha elegido
  * 				el algoritmo RSA, con un tamano de clave de 1024 bits. Se ha
  * 				utilizado el modo de encriptado "ECB" (Electronic Code Book)
  * 				y el padding PKCS1.
@@ -71,7 +71,7 @@ import org.bouncycastle.x509.X509V3CertificateGenerator;
  * 				rapido computacionalmente que otros algoritmos como el DSA.
  *         		
  *          -CLAVE SECRETA:
- *          	Para la generación de una clave secreta se ha elegido el 
+ *          	Para la generaciÃ³n de una clave secreta se ha elegido el 
  *          	algoritmo AES, con un tamano de clave de 128 bits, ya que es 
  *          	el estandar que sustituyo al algorito DES en Estados Unidos y
  *          	ha demostrado ser mas seguro y rapido que el propio DES o su
@@ -335,7 +335,7 @@ public class Main {
 			System.out.println("Hasheo completado");
 			System.out.println("Mensaje original:\t" + MENSAJE);
 			System.out.println("Mensaje hasheado:\t" + hash);
-			System.out.println("Tiempo de ejecución de hasheo: " + duration + " milisegundos");
+			System.out.println("Tiempo de ejecuciï¿½n de hasheo: " + duration + " milisegundos");
 			System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
 		}
 
@@ -348,7 +348,7 @@ public class Main {
 		/* Criptografia de clave secreta */
 		if (debug) {
 			System.out.println("=-=-=-=Clave secreta=-=-=-=");
-			System.out.println("Comienzo de generación de clave secreta");
+			System.out.println("Comienzo de generaciï¿½n de clave secreta");
 			System.out.println("Generando...");
 		}
 
@@ -359,7 +359,7 @@ public class Main {
 		double duration = (endTime - startTime) / (1000000.0);
 
 		if (debug) {
-			System.out.println("Tiempo de ejecución de generación de clave secreta: " + duration + " milisegundos");
+			System.out.println("Tiempo de ejecuciï¿½n de generaciï¿½n de clave secreta: " + duration + " milisegundos");
 			System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
 		}
 
@@ -378,7 +378,7 @@ public class Main {
 		/* Criptografia de clave publica/privada */
 		if (debug) {
 			System.out.println("=-=-=-=Clave publica/privada=-=-=-=");
-			System.out.println("Comienzo de generación de clave privada y clave pública");
+			System.out.println("Comienzo de generaciï¿½n de clave privada y clave pï¿½blica");
 			System.out.println("Generando...");
 		}
 
@@ -390,7 +390,7 @@ public class Main {
 
 		if (debug) {
 			System.out.println(
-					"Tiempo de ejecución de generación de clave publica" + "y privada: " + duration + " milisegundos");
+					"Tiempo de ejecuciï¿½n de generaciï¿½n de clave publica" + "y privada: " + duration + " milisegundos");
 			System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
 		}
 
@@ -498,7 +498,7 @@ public class Main {
 		long duration = (endTime - startTime) / (long) (1000000.0);
 
 		if (debug) {
-			System.out.println("Tiempo de ejecución de creacion de firma digital: " + duration + " milisegundos");
+			System.out.println("Tiempo de ejecuciï¿½n de creacion de firma digital: " + duration + " milisegundos");
 			System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
 		}
 		return duration;

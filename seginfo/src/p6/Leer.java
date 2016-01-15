@@ -3,9 +3,31 @@ package p6;
 import java.util.Scanner;
 import org.owasp.esapi.ESAPI;
 import org.owasp.esapi.Encoder;
+import org.owasp.esapi.Validator;
 import org.owasp.esapi.codecs.MySQLCodec;
 import org.owasp.esapi.errors.EncodingException;
 import org.owasp.esapi.reference.DefaultValidator;
+
+/**
+ * 
+ * @author Alejandro Royo Amondarain (NIP: 560285) Jaime Ruiz-Borau Vizarraga
+ *         (NIP: 546751)
+ *
+ *         Clase Leer. Contiene el funcionamiento principal del programa
+ *         solicitado en el guion de la practica 6.
+ * 
+ *         Es necesario que esten definidos en el fichero ESAPI.properties y
+ *         validation.properties las siguientes reglas especiales:
+ * 
+ *         Validator.Nombre=^[A-Za-z0-9'-. (?=&)]{0,50}$
+ *         Validator.Direccion=^[A-Za-z0-9'-,. (?=&)/º]{0,50}$
+ *         Validator.TC=^[0-9]{16}$ 
+ *         Validator.TipoTC=^(MC|VISA|AMEX)$
+ *         Validator.MesExpiraTC=^[0-9]{2}$ 
+ *         Validator.AnyoExpiraTC=^[0-9]{4}$
+ *         Validator.CVNTC=^[0-9]{3}$ 
+ *         Validator.DNI=^[0-9]{8}[A-Z]{1}$
+ */
 
 public class Leer {
 
@@ -62,18 +84,12 @@ public class Leer {
 
 				// Canonicaliza
 				if (c) {
-					input = enc.canonicalize(input);
-					System.out.println("Canonizado: " + input);
+					canonizar(enc, input);
 				}
 
 				// Valida
 				if (v) {
-					boolean b = val.isValidInput(formulario[i], input, properties[i], 50, false);
-					if (b)
-						System.out.print("E");
-					else
-						System.out.print("No e");
-					System.out.println("s valido");
+					validar(formulario, properties, i, input, val);
 				}
 
 				// Codifica
@@ -81,35 +97,118 @@ public class Leer {
 
 					// SQL
 					if (e[0]) {
-						System.out.println("Codificacion para MySQL: ");
-						MySQLCodec codec = new MySQLCodec(MySQLCodec.Mode.STANDARD);
-						System.out.println(ESAPI.encoder().encodeForSQL(codec, input));
-						System.out.println();
+						codificarMySQL(input);
 					}
 
 					// URL
 					if (e[1]) {
-						System.out.println("Codificacion para URL: ");
-						try {
-							System.out.println(ESAPI.encoder().encodeForURL(input));
-						} catch (EncodingException e1) {
-							System.out.println("ERROR: No se pudo codificar \"" + input + "\" en formato URL");
-						}
-						System.out.println();
+						codificarURL(input);
 					}
 
 					// HTML
 					if (e[2]) {
-						System.out.println("Codificacion para HTML: ");
-						System.out.println(ESAPI.encoder().encodeForHTML(input));
-						System.out.println();
+						codificarHTML(input);
 					}
 				}
-				System.out.println();
-				System.out.println("===============");
+				System.out.println("============" + relleno(formulario[i].length()));
 				System.out.println();
 			}
 		}
+	}
 
+	/**
+	 * Metodo auxiliar para encapsular la canonizacion
+	 * 
+	 * @param enc
+	 *            : Encoder empleado
+	 * @param input
+	 *            : Entrada a canonizar
+	 */
+	private static void canonizar(Encoder enc, String input) {
+		input = enc.canonicalize(input);
+		System.out.println("Canonizado: " + input);
+	}
+
+	/**
+	 * Metodo auxiliar para encapsular la validacion
+	 * 
+	 * @param formulario
+	 *            : Parametro auxiliar para mostrar informacion adicional por
+	 *            pantalla (no relevante)
+	 * @param properties
+	 *            : Parametro auxiliar para mostrar informacion adicional por
+	 *            pantalla (no relevante)
+	 * @param i
+	 *            : Parametro auxiliar para mostrar informacion adicional por
+	 *            pantalla (no relevante)
+	 * @param input
+	 *            : Entrada a validar
+	 * @param val
+	 *            : Validator empleado
+	 */
+	private static void validar(String[] formulario, String[] properties, int i, String input, Validator val) {
+		boolean b = val.isValidInput(formulario[i], input, properties[i], 50, false);
+		if (b)
+			System.out.print("E");
+		else
+			System.out.print("No e");
+		System.out.println("s valido");
+	}
+
+	/**
+	 * Metodo auxiliar para encapsular codificacion MySQL
+	 * 
+	 * @param input
+	 *            : Entrada a codificar
+	 */
+	private static void codificarMySQL(String input) {
+		System.out.println("Codificacion para MySQL: ");
+		MySQLCodec codec = new MySQLCodec(MySQLCodec.Mode.STANDARD);
+		System.out.println(ESAPI.encoder().encodeForSQL(codec, input));
+		System.out.println();
+	}
+
+	/**
+	 * Metodo auxiliar para encapsular codificacion URL
+	 * 
+	 * @param input
+	 *            : Entrada a codificar
+	 */
+	private static void codificarURL(String input) {
+		System.out.println("Codificacion para URL: ");
+		try {
+			System.out.println(ESAPI.encoder().encodeForURL(input));
+		} catch (EncodingException e1) {
+			System.out.println("ERROR: No se pudo codificar \"" + input + "\" en formato URL");
+		}
+		System.out.println();
+	}
+
+	/**
+	 * Metodo auxiliar para encapsular codificacion HTML
+	 * 
+	 * @param input
+	 *            : Entrada a codificar
+	 */
+	private static void codificarHTML(String input) {
+		System.out.println("Codificacion para HTML: ");
+		System.out.println(ESAPI.encoder().encodeForHTML(input));
+		System.out.println();
+	}
+
+	/**
+	 * Metodo auxiliar para mostrar por pantalla mejor la informacion
+	 * 
+	 * @param num
+	 *            : numero de simbolos '=' solicitados
+	 * 
+	 * @return String con numero 'num' de simbolos '='
+	 */
+	private static String relleno(int num) {
+		String returned = "";
+		for (int i = 0; i < num; i++) {
+			returned = returned + "=";
+		}
+		return returned;
 	}
 }
